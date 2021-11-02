@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "@relaycorp/shared-config": "^1.6.0",
+    "gradle-semantic-release-plugin": "^1.5.1"
+  }
+}

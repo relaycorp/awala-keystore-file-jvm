@@ -1,0 +1,9 @@
+.gradle
+build
+
+docs/.bundle
+docs/vendor
+
+# Ignore `semantic-release` dependencies
+node_modules/
+package-lock.json
