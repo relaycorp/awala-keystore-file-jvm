@@ -99,6 +99,7 @@ tasks.test {
 tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = "1.8"
+        allWarningsAsErrors = true
         freeCompilerArgs = freeCompilerArgs + arrayOf(
             "-Xopt-in=kotlin.RequiresOptIn"
         )
