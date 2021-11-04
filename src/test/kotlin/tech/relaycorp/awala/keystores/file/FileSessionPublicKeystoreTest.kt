@@ -13,6 +13,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.bson.BsonBinaryReader
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -137,5 +138,43 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             BsonBinaryReader(ByteBuffer.wrap(dataFilePath.toFile().readBytes())).also {
                 it.readStartDocument()
             }
+    }
+
+    @Nested
+    inner class Retrieve {
+        @Test
+        @Disabled
+        fun `Null should be returned if file doesn't exist`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Data should be returned if file exists and is valid`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if file isn't readable`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if file is not BSON-serialized`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if key id is missing`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if key serialization is missing`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if creation timestamp is missing`() {
+        }
     }
 }
