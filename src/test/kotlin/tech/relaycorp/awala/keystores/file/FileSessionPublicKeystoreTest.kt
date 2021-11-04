@@ -18,7 +18,6 @@ import org.bson.BsonBinaryWriter
 import org.bson.BsonInvalidOperationException
 import org.bson.io.BasicOutputBuffer
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -280,24 +279,47 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
 
     @Nested
     inner class Delete {
-        @Test
-        @Disabled
-        fun `Deletion should be skipped if the root directory doesn't exist`() {
+        @BeforeEach
+        fun createRootDirectory() {
+            publicKeystoreRootPath.createDirectory()
         }
 
         @Test
-        @Disabled
-        fun `Deletion should be skipped if the file doesn't exist`() {
+        fun `Deletion should be skipped if the root directory doesn't exist`() = runBlockingTest {
+            publicKeystoreRootPath.deleteExisting()
+            val keystore = FileSessionPublicKeystore(keystoreRoot)
+
+            keystore.delete(peerPrivateAddress)
         }
 
         @Test
-        @Disabled
-        fun `Failure to delete the file should be wrapped`() {
+        fun `Deletion should be skipped if the file doesn't exist`() = runBlockingTest {
+            val keystore = FileSessionPublicKeystore(keystoreRoot)
+
+            keystore.delete(peerPrivateAddress)
         }
 
         @Test
-        @Disabled
-        fun `File should be deleted if it exists`() {
+        fun `Failure to delete the file should be wrapped`() = runBlockingTest {
+            keyDataFilePath.toFile().createNewFile()
+            keyDataFilePath.toFile().setWritable(false)
+            val keystore = FileSessionPublicKeystore(keystoreRoot)
+
+            val exception =
+                assertThrows<FileKeystoreException> { keystore.delete(peerPrivateAddress) }
+
+            assertEquals("Failed to delete key file", exception.message)
+            assertTrue(exception.cause is IOException)
+        }
+
+        @Test
+        fun `File should be deleted if it exists`() = runBlockingTest {
+            val keystore = FileSessionPublicKeystore(keystoreRoot)
+            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+
+            keystore.delete(peerPrivateAddress)
+
+            assertThrows<MissingKeyException> { keystore.retrieve(peerPrivateAddress) }
         }
     }
 }
