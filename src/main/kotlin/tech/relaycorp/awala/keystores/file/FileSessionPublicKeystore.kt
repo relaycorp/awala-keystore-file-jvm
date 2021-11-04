@@ -50,6 +50,10 @@ public class FileSessionPublicKeystore(
         }
     }
 
+    override suspend fun delete(peerPrivateAddress: String) {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun retrieveKeyData(peerPrivateAddress: String): SessionPublicKeyData? {
         val keyDataFile = getKeyDataFile(peerPrivateAddress)
         if (!keyDataFile.exists()) {

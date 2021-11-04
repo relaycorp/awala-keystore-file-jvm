@@ -18,6 +18,7 @@ import org.bson.BsonBinaryWriter
 import org.bson.BsonInvalidOperationException
 import org.bson.io.BasicOutputBuffer
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -274,6 +275,29 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
                 buffer.toByteArray()
             }
             saveKeyData(bsonSerialization)
+        }
+    }
+
+    @Nested
+    inner class Delete {
+        @Test
+        @Disabled
+        fun `Deletion should be skipped if the root directory doesn't exist`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Deletion should be skipped if the file doesn't exist`() {
+        }
+
+        @Test
+        @Disabled
+        fun `Failure to delete the file should be wrapped`() {
+        }
+
+        @Test
+        @Disabled
+        fun `File should be deleted if it exists`() {
         }
     }
 }

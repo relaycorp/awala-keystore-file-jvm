@@ -28,7 +28,7 @@ dependencies {
     // Align versions of all Kotlin components
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
-    api("tech.relaycorp:awala:[1.53.2,2.0.0)")
+    api("tech.relaycorp:awala:[1.54.0,2.0.0)")
     testImplementation("tech.relaycorp:awala-testing:1.3.0")
 
     implementation("org.mongodb:bson:4.3.3")
