@@ -300,19 +300,6 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Failure to delete the file should be wrapped`() = runBlockingTest {
-            keyDataFilePath.toFile().createNewFile()
-            keyDataFilePath.toFile().setWritable(false)
-            val keystore = FileSessionPublicKeystore(keystoreRoot)
-
-            val exception =
-                assertThrows<FileKeystoreException> { keystore.delete(peerPrivateAddress) }
-
-            assertEquals("Failed to delete key file", exception.message)
-            assertTrue(exception.cause is IOException)
-        }
-
-        @Test
         fun `File should be deleted if it exists`() = runBlockingTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
             keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)

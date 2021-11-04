@@ -51,12 +51,8 @@ public class FileSessionPublicKeystore(
     }
 
     override suspend fun delete(peerPrivateAddress: String) {
-        val file = getKeyDataFile(peerPrivateAddress)
-        try {
-            file.delete()
-        } catch (exc: IOException) {
-            throw FileKeystoreException("Failed to delete key file", exc)
-        }
+        val keyDataFile = getKeyDataFile(peerPrivateAddress)
+        keyDataFile.delete()
     }
 
     override suspend fun retrieveKeyData(peerPrivateAddress: String): SessionPublicKeyData? {
