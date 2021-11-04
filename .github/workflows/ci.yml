@@ -28,7 +28,7 @@ jobs:
             ${{ runner.os }}-gradle-
       - uses: eskatos/gradle-command-action@v1
         with:
-          arguments: build --stacktrace
+          arguments: build --scan
       - uses: eskatos/gradle-command-action@v1
         with:
           arguments: jacocoTestCoverageVerification
