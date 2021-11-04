@@ -1,10 +1,14 @@
 package tech.relaycorp.awala.keystores.file
 
+import java.io.File
 import java.io.IOException
+import java.nio.ByteBuffer
 import java.nio.file.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.exists
+import org.bson.BSONException
 import org.bson.BsonBinary
+import org.bson.BsonBinaryReader
 import org.bson.BsonBinaryWriter
 import org.bson.io.BasicOutputBuffer
 import tech.relaycorp.relaynet.keystores.SessionPublicKeyData
@@ -28,7 +32,7 @@ public class FileSessionPublicKeystore(
                 throw FileKeystoreException("Failed to create root directory for public keys", exc)
             }
         }
-        val keyDataFile = rootDirectory.resolve(peerPrivateAddress).toFile()
+        val keyDataFile = getKeyDataFile(peerPrivateAddress)
         val bsonSerialization = BasicOutputBuffer().use { buffer ->
             BsonBinaryWriter(buffer).use {
                 it.writeStartDocument()
@@ -47,6 +51,31 @@ public class FileSessionPublicKeystore(
     }
 
     override suspend fun retrieveKeyData(peerPrivateAddress: String): SessionPublicKeyData? {
-        return null
+        val keyDataFile = getKeyDataFile(peerPrivateAddress)
+        if (!keyDataFile.exists()) {
+            return null
+        }
+        val serialization = try {
+            keyDataFile.readBytes()
+        } catch (exc: IOException) {
+            throw FileKeystoreException("Failed to read key file", exc)
+        }
+        val data = try {
+            BsonBinaryReader(ByteBuffer.wrap(serialization)).use {
+                it.readStartDocument()
+                SessionPublicKeyData(
+                    it.readBinaryData("key_id").data,
+                    it.readBinaryData("key_der").data,
+                    it.readInt32("creation_timestamp").toLong()
+                )
+            }
+        } catch (exc: BSONException) {
+            throw FileKeystoreException("Key file is malformed", exc)
+        }
+        return data
+    }
+
+    private fun getKeyDataFile(peerPrivateAddress: String): File {
+        return rootDirectory.resolve(peerPrivateAddress).toFile()
     }
 }
