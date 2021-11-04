@@ -1,3 +1,6 @@
 package tech.relaycorp.awala.keystores.file
 
-public class FileKeystoreException(message: String) : Exception(message)
+import tech.relaycorp.relaynet.keystores.KeyStoreBackendException
+
+public class FileKeystoreException(message: String, cause: Throwable? = null) :
+    KeyStoreBackendException(message, cause)

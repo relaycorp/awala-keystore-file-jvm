@@ -12,12 +12,11 @@ import kotlin.test.assertEquals
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class FileSessionPublicKeyStoreTest {
+class FileKeystoreRootTest {
     private val tmpDirectory = Files.createTempDirectory("public-key-store-test-")
     private val rootDirectory = tmpDirectory.resolve("root")
 
@@ -51,7 +50,7 @@ class FileSessionPublicKeyStoreTest {
             rootDirectory.createFile()
 
             val exception = assertThrows<FileKeystoreException> {
-                FileSessionPublicKeyStore(rootDirectory)
+                FileKeystoreRoot(rootDirectory)
             }
 
             assertEquals(
@@ -65,7 +64,7 @@ class FileSessionPublicKeyStoreTest {
             val rootDirectory = File("relative").toPath()
 
             val exception = assertThrows<FileKeystoreException> {
-                FileSessionPublicKeyStore(rootDirectory)
+                FileKeystoreRoot(rootDirectory)
             }
 
             assertEquals(
@@ -79,7 +78,7 @@ class FileSessionPublicKeyStoreTest {
             val rootDirectory = tmpDirectory.resolve("non-existing")
 
             val exception = assertThrows<FileKeystoreException> {
-                FileSessionPublicKeyStore(rootDirectory)
+                FileKeystoreRoot(rootDirectory)
             }
 
             assertEquals(
@@ -93,7 +92,7 @@ class FileSessionPublicKeyStoreTest {
             rootDirectory.toFile().setReadable(false)
 
             val exception = assertThrows<FileKeystoreException> {
-                FileSessionPublicKeyStore(rootDirectory)
+                FileKeystoreRoot(rootDirectory)
             }
 
             assertEquals(
@@ -107,41 +106,13 @@ class FileSessionPublicKeyStoreTest {
             rootDirectory.toFile().setWritable(false)
 
             val exception = assertThrows<FileKeystoreException> {
-                FileSessionPublicKeyStore(rootDirectory)
+                FileKeystoreRoot(rootDirectory)
             }
 
             assertEquals(
                 "Root '${rootDirectory.pathString}' isn't writable",
                 exception.message
             )
-        }
-    }
-
-    @Nested
-    inner class Save {
-        @Test
-        @Disabled
-        fun `Parent directories should be created if they don't already exist`() {
-        }
-
-        @Test
-        @Disabled
-        fun `Errors creating parent directories should be wrapped`() {
-        }
-
-        @Test
-        @Disabled
-        fun `Key data should be stored in new file if there is no prior key for peer`() {
-        }
-
-        @Test
-        @Disabled
-        fun `Key data should be updated if there is a prior key for peer`() {
-        }
-
-        @Test
-        @Disabled
-        fun `Data should be flushed with fdatasync`() {
         }
     }
 }
