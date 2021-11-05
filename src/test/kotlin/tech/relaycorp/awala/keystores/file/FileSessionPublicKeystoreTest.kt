@@ -21,6 +21,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 import tech.relaycorp.relaynet.SessionKeyPair
 import tech.relaycorp.relaynet.keystores.MissingKeyException
 import tech.relaycorp.relaynet.testing.pki.PDACertPath
@@ -176,6 +178,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-readable and non-existing
         fun `Exception should be thrown if file isn't readable`() = runBlockingTest {
             keyDataFilePath.toFile().createNewFile()
             keyDataFilePath.toFile().setReadable(false)
