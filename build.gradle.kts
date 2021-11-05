@@ -128,8 +128,10 @@ publishing {
 
             pom {
                 name.set(rootProject.name)
-                description.set("Awala JVM library")
-                url.set("https://github.com/relaycorp/awala-jvm")
+                description.set(
+                    "JVM implementation of file-based Private and Public Key Stores for Awala"
+                )
+                url.set("https://github.com/relaycorp/awala-keystore-file-jvm")
                 developers {
                     developer {
                         id.set("relaycorp")
@@ -143,9 +145,9 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/relaycorp/awala-jvm.git")
-                    developerConnection.set("scm:git:https://github.com/relaycorp/awala-jvm.git")
-                    url.set("https://github.com/relaycorp/awala-jvm")
+                    connection.set("scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git")
+                    developerConnection.set("scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git")
+                    url.set("https://github.com/relaycorp/awala-keystore-file-jvm")
                 }
             }
         }
