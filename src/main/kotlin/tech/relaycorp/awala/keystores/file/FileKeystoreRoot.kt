@@ -26,7 +26,7 @@ public class FileKeystoreRoot @Throws(FileKeystoreException::class) constructor(
         if (!Files.isReadable(directory)) { // directory.isReadable() doesn't work on Windows
             throw FileKeystoreException("Root '${directory.pathString}' isn't readable")
         }
-        if (!Files.isWritable(directory)) { // directory.isReadable() doesn't work on Windows
+        if (!Files.isWritable(directory)) { // directory.isWritable() doesn't work on Windows
             throw FileKeystoreException("Root '${directory.pathString}' isn't writable")
         }
     }
