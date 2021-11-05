@@ -61,6 +61,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS)
         fun `Errors creating parent directory should be wrapped`() = runBlockingTest {
             keystoreRoot.directory.toFile().setExecutable(false)
             keystoreRoot.directory.toFile().setWritable(false)
