@@ -50,11 +50,6 @@ public class FileSessionPublicKeystore(
         }
     }
 
-    override suspend fun delete(peerPrivateAddress: String) {
-        val keyDataFile = getKeyDataFile(peerPrivateAddress)
-        keyDataFile.delete()
-    }
-
     override suspend fun retrieveKeyData(peerPrivateAddress: String): SessionPublicKeyData? {
         val keyDataFile = getKeyDataFile(peerPrivateAddress)
         if (!keyDataFile.exists()) {
@@ -78,6 +73,11 @@ public class FileSessionPublicKeystore(
             throw FileKeystoreException("Key file is malformed", exc)
         }
         return data
+    }
+
+    override suspend fun delete(peerPrivateAddress: String) {
+        val keyDataFile = getKeyDataFile(peerPrivateAddress)
+        keyDataFile.delete()
     }
 
     private fun getKeyDataFile(peerPrivateAddress: String): File {
