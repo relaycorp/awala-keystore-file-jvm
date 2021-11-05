@@ -68,18 +68,21 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "CLASS"
                 value = "MISSEDCOUNT"
-                maximum = "0".toBigDecimal()
+                maximum = 0.toBigDecimal()
             }
             limit {
                 counter = "METHOD"
                 value = "MISSEDCOUNT"
-                maximum = "0".toBigDecimal()
+                maximum = 0.toBigDecimal()
             }
 
             limit {
                 counter = "BRANCH"
                 value = "MISSEDCOUNT"
-                maximum = "0".toBigDecimal()
+
+                // Filesystem readability/writability checks don't work on Windows
+                val isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
+                maximum = (if (isWindows) 0 else 3).toBigDecimal()
             }
         }
     }
