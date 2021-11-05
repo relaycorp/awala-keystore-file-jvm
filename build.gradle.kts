@@ -1,3 +1,4 @@
+import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "tech.relaycorp"
@@ -81,8 +82,7 @@ tasks.jacocoTestCoverageVerification {
                 value = "MISSEDCOUNT"
 
                 // Filesystem readability/writability checks don't work on Windows
-                val isWindows = System.getProperty("os.name").toLowerCase().contains("windows")
-                maximum = (if (isWindows) 0 else 3).toBigDecimal()
+                maximum = (if (OperatingSystem.current().isWindows) 0 else 3).toBigDecimal()
             }
         }
     }
