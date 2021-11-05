@@ -52,13 +52,13 @@ public class FileSessionPublicKeystore(
 
     override suspend fun retrieveKeyData(peerPrivateAddress: String): SessionPublicKeyData? {
         val keyDataFile = getKeyDataFile(peerPrivateAddress)
-        if (!keyDataFile.exists()) {
-            return null
-        }
         val serialization = try {
             keyDataFile.readBytes()
         } catch (exc: IOException) {
-            throw FileKeystoreException("Failed to read key file", exc)
+            if (keyDataFile.exists()) {
+                throw FileKeystoreException("Failed to read key file", exc)
+            }
+            return null
         }
         val data = try {
             BsonBinaryReader(ByteBuffer.wrap(serialization)).use {
