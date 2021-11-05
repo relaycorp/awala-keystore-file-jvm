@@ -3,13 +3,11 @@ package tech.relaycorp.awala.keystores.file
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.file.Path
-import java.util.Base64
+import java.time.ZonedDateTime
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
@@ -20,6 +18,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
 import tech.relaycorp.relaynet.SessionKeyPair
+import tech.relaycorp.relaynet.issueEndpointCertificate
 import tech.relaycorp.relaynet.testing.pki.KeyPairSet
 import tech.relaycorp.relaynet.testing.pki.PDACertPath
 
@@ -38,7 +37,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
 
     private val identityKeyFilePath = nodeDirectoryPath.resolve("i-$privateAddress")
     private val sessionKeyFilePath = nodeDirectoryPath.resolve(
-        "s-${Base64.getEncoder().encodeToString(sessionKeypair.sessionKey.keyId)}"
+        "s-${byteArrayToHex(sessionKeypair.sessionKey.keyId)}"
     )
 
     @Nested
@@ -102,11 +101,15 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveIdentityKey(privateKey, certificate)
 
             // Replace the certificate
-            val differentCertificate = PDACertPath.PDA
-            assertNotEquals(differentCertificate, certificate)
+            val differentCertificate = issueEndpointCertificate(
+                KeyPairSet.PRIVATE_ENDPOINT.public,
+                privateKey,
+                ZonedDateTime.now().plusMinutes(1)
+            )
             keystore.saveIdentityKey(privateKey, differentCertificate)
 
             val savedKeyData = readKeyData(identityKeyFilePath)
+            savedKeyData.readBinaryData("private_key")
             assertEquals(
                 differentCertificate.serialize().asList(),
                 savedKeyData.readBinaryData("certificate").data.asList()
@@ -170,7 +173,9 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             )
 
             val savedKeyData = readKeyData(sessionKeyFilePath)
-            assertNull(savedKeyData.readNull("peer_private_address"))
+            savedKeyData.readBinaryData("private_key")
+            savedKeyData.readBinaryData("certificate")
+            assertEquals("", savedKeyData.readString("peer_private_address"))
         }
 
         @Test
@@ -213,4 +218,6 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             it.readStartDocument()
         }
     }
+
+    fun byteArrayToHex(byteArray: ByteArray) = byteArray.joinToString("") { "%02x".format(it) }
 }

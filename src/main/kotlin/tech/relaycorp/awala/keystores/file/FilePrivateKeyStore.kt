@@ -1,11 +1,12 @@
 package tech.relaycorp.awala.keystores.file
 
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
-import kotlin.io.path.exists
 import org.bson.BsonBinary
 import org.bson.BsonBinaryWriter
 import org.bson.io.BasicOutputBuffer
@@ -26,25 +27,22 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         privateAddress: String
     ) {
         val nodeSubdirectory = getNodeSubdirectory(privateAddress)
-        if (!nodeSubdirectory.exists()) {
+        try {
             nodeSubdirectory.createDirectories()
+        } catch (exc: FileAlreadyExistsException) {
+            // Do nothing
+        } catch (exc: IOException) {
+            throw FileKeystoreException("Failed to create root directory for private keys", exc)
         }
         val keyFile = nodeSubdirectory.resolve(keyId).toFile()
-        val bsonSerialization = BasicOutputBuffer().use { buffer ->
-            BsonBinaryWriter(buffer).use {
-                it.writeStartDocument()
-                it.writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
-                it.writeBinaryData(
-                    "certificate",
-                    BsonBinary(keyData.certificateDer ?: byteArrayOf())
-                )
-                it.writeEndDocument()
+        val bsonSerialization = bsonSerializeKeyData(keyData)
+        try {
+            makeEncryptedOutputStream(keyFile).use {
+                it.write(bsonSerialization)
+                it.flush()
             }
-            buffer.toByteArray()
-        }
-        makeEncryptedOutputStream(keyFile).use {
-            it.write(bsonSerialization)
-            it.flush()
+        } catch (exc: IOException) {
+            throw FileKeystoreException("Failed to save key file", exc)
         }
     }
 
@@ -58,4 +56,23 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     protected abstract fun makeEncryptedOutputStream(file: File): OutputStream
 
     protected abstract fun makeEncryptedInputStream(file: File): InputStream
+
+    private companion object {
+        fun bsonSerializeKeyData(keyData: PrivateKeyData): ByteArray {
+            val bsonSerialization = BasicOutputBuffer().use { buffer ->
+                BsonBinaryWriter(buffer).use {
+                    it.writeStartDocument()
+                    it.writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
+                    it.writeBinaryData(
+                        "certificate",
+                        BsonBinary(keyData.certificateDer ?: byteArrayOf())
+                    )
+                    it.writeString("peer_private_address", keyData.peerPrivateAddress ?: "")
+                    it.writeEndDocument()
+                }
+                buffer.toByteArray()
+            }
+            return bsonSerialization
+        }
+    }
 }
