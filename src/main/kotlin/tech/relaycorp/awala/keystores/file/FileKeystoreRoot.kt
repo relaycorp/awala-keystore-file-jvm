@@ -24,6 +24,7 @@ public class FileKeystoreRoot @Throws(FileKeystoreException::class) constructor(
         if (!directory.isDirectory()) {
             throw FileKeystoreException("Root '${directory.pathString}' isn't a directory")
         }
+
         // Check permissions (read and write operations are always allowed on Windows)
         if (!directory.isReadable()) {
             throw FileKeystoreException("Root '${directory.pathString}' isn't readable")
