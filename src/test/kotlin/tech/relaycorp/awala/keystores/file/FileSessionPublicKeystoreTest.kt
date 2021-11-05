@@ -30,7 +30,7 @@ import tech.relaycorp.relaynet.testing.pki.PDACertPath
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 class FileSessionPublicKeystoreTest : KeystoreTestCase() {
-    private val peerPrivateAddress = PDACertPath.PRIVATE_ENDPOINT.subjectPrivateAddress
+    private val peerPrivateAddress = PDACertPath.PDA.subjectPrivateAddress
 
     private val sessionKeyPair = SessionKeyPair.generate()
 
