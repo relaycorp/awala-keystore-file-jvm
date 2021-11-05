@@ -1,3 +1,4 @@
+import org.gradle.internal.os.OperatingSystem
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 group = "tech.relaycorp"
@@ -28,11 +29,12 @@ dependencies {
     // Align versions of all Kotlin components
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
-    // Use the Kotlin JDK 8 standard library.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    api("tech.relaycorp:awala:[1.54.0,2.0.0)")
+    testImplementation("tech.relaycorp:awala-testing:1.3.0")
+
+    implementation("org.mongodb:bson:4.3.3")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
-
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.8.1")
@@ -67,18 +69,20 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "CLASS"
                 value = "MISSEDCOUNT"
-                maximum = "0".toBigDecimal()
+                maximum = 0.toBigDecimal()
             }
             limit {
                 counter = "METHOD"
                 value = "MISSEDCOUNT"
-                maximum = "0".toBigDecimal()
+                maximum = 0.toBigDecimal()
             }
 
             limit {
                 counter = "BRANCH"
                 value = "MISSEDCOUNT"
-                maximum = "0".toBigDecimal()
+
+                // Filesystem readability/writability checks don't work on Windows
+                maximum = (if (OperatingSystem.current().isWindows) 3 else 0).toBigDecimal()
             }
         }
     }
@@ -174,4 +178,11 @@ tasks.publish {
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
     version.set("0.42.1")
+}
+
+gradleEnterprise {
+    buildScan {
+        termsOfServiceUrl = "https://gradle.com/terms-of-service"
+        termsOfServiceAgree = "yes"
+    }
 }
