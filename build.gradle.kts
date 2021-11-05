@@ -82,7 +82,7 @@ tasks.jacocoTestCoverageVerification {
                 value = "MISSEDCOUNT"
 
                 // Filesystem readability/writability checks don't work on Windows
-                maximum = (if (OperatingSystem.current().isWindows) 0 else 3).toBigDecimal()
+                maximum = (if (OperatingSystem.current().isWindows) 3 else 0).toBigDecimal()
             }
         }
     }
