@@ -145,8 +145,12 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git")
-                    developerConnection.set("scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git")
+                    connection.set(
+                        "scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git"
+                    )
+                    developerConnection.set(
+                        "scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git"
+                    )
                     url.set("https://github.com/relaycorp/awala-keystore-file-jvm")
                 }
             }
