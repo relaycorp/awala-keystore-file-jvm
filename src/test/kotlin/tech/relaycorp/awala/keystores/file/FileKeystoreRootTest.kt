@@ -15,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 
 class FileKeystoreRootTest {
     private val tmpDirectory = Files.createTempDirectory("public-key-store-test-")
@@ -88,6 +90,7 @@ class FileKeystoreRootTest {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS)
         fun `Root directory should be refused if it isn't readable`() {
             rootDirectory.toFile().setReadable(false)
 
@@ -102,6 +105,7 @@ class FileKeystoreRootTest {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS)
         fun `Root directory should be refused if it isn't writable`() {
             rootDirectory.toFile().setWritable(false)
 

@@ -1,9 +1,10 @@
 package tech.relaycorp.awala.keystores.file
 
-import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
 import kotlin.io.path.isDirectory
+import kotlin.io.path.isReadable
+import kotlin.io.path.isWritable
 import kotlin.io.path.pathString
 
 public class FileKeystoreRoot @Throws(FileKeystoreException::class) constructor(
@@ -23,10 +24,11 @@ public class FileKeystoreRoot @Throws(FileKeystoreException::class) constructor(
         if (!directory.isDirectory()) {
             throw FileKeystoreException("Root '${directory.pathString}' isn't a directory")
         }
-        if (!Files.isReadable(directory)) { // directory.isReadable() doesn't work on Windows
+        // Check permissions (read and write operations are always allowed on Windows)
+        if (!directory.isReadable()) {
             throw FileKeystoreException("Root '${directory.pathString}' isn't readable")
         }
-        if (!Files.isWritable(directory)) { // directory.isWritable() doesn't work on Windows
+        if (!directory.isWritable()) {
             throw FileKeystoreException("Root '${directory.pathString}' isn't writable")
         }
     }
