@@ -223,7 +223,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Exception should be thrown if key serialization is missing`() = runBlockingTest {
+        fun `Exception should be thrown if public key is missing`() = runBlockingTest {
             saveKeyData {
                 writeBinaryData("key_id", BsonBinary(sessionKeyPair.sessionKey.keyId))
                 writeInt32("creation_timestamp", creationTimestamp)

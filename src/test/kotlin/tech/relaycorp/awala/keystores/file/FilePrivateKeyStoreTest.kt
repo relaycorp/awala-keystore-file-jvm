@@ -12,6 +12,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.bson.BsonBinaryReader
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -216,6 +217,67 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             ByteBuffer.wrap(MockFilePrivateKeyStore.readFile(path.toFile()))
         ).also {
             it.readStartDocument()
+        }
+    }
+
+    @Nested
+    inner class Retrieve {
+        @Test
+        fun notImplemented() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+            assertThrows<NotImplementedError> { keystore.retrieveIdentityKey(privateAddress) }
+        }
+
+        @Test
+        @Disabled
+        fun `Key should be reported as missing if the node subdirectory doesn't exist`() =
+            runBlockingTest {
+            }
+
+        @Test
+        @Disabled
+        fun `Key should be reported as missing if the file doesn't exist`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if file isn't readable`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if file is not BSON-serialized`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Exception should be thrown if private key is missing`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Private key should be returned if file exists and is valid`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Certificate should be returned if present`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Certificate should not be returned if absent`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Peer private address should be returned if present`() = runBlockingTest {
+        }
+
+        @Test
+        @Disabled
+        fun `Peer private address should not be returned if absent`() = runBlockingTest {
         }
     }
 
