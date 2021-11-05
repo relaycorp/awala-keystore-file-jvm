@@ -20,7 +20,8 @@ class MockFilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : FilePrivateKeySt
 
     override fun makeEncryptedInputStream(file: File): InputStream {
         val stream = file.inputStream()
-        val actualHeader = stream.readNBytes(header.size)
+        val actualHeader = byteArrayOf()
+        stream.read(actualHeader, 0, header.size)
         assertEquals(
             header.toString(charset),
             actualHeader.toString(charset)
