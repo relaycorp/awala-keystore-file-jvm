@@ -219,5 +219,6 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
     }
 
-    fun byteArrayToHex(byteArray: ByteArray) = byteArray.joinToString("") { "%02x".format(it) }
+    private fun byteArrayToHex(byteArray: ByteArray) =
+        byteArray.joinToString("") { "%02x".format(it) }
 }
