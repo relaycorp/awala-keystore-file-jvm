@@ -5,8 +5,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
-import java.nio.file.FileAlreadyExistsException
-import kotlin.io.path.createDirectories
 import org.bson.BSONException
 import org.bson.BsonBinary
 import org.bson.BsonBinaryReader
@@ -25,14 +23,13 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         privateAddress: String
     ) {
         val nodeSubdirectory = getNodeSubdirectory(privateAddress)
-        try {
-            nodeSubdirectory.createDirectories()
-        } catch (exc: FileAlreadyExistsException) {
-            // Do nothing
-        } catch (exc: IOException) {
-            throw FileKeystoreException("Failed to create root directory for private keys", exc)
+
+        val wereDirectoriesCreated = nodeSubdirectory.mkdirs()
+        if (!wereDirectoriesCreated && !nodeSubdirectory.exists()) {
+            throw FileKeystoreException("Failed to create root directory for private keys")
         }
-        val keyFile = nodeSubdirectory.resolve(keyId).toFile()
+
+        val keyFile = nodeSubdirectory.resolve(keyId)
         val bsonSerialization = bsonSerializeKeyData(keyData)
         try {
             makeEncryptedOutputStream(keyFile).use {
@@ -45,7 +42,7 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     }
 
     override suspend fun retrieveKeyData(keyId: String, privateAddress: String): PrivateKeyData? {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve(keyId).toFile()
+        val keyFile = getNodeSubdirectory(privateAddress).resolve(keyId)
         val serialization = try {
             makeEncryptedInputStream(keyFile).use { it.readBytes() }
         } catch (exc: IOException) {

@@ -4,7 +4,6 @@ import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createDirectory
-import kotlin.io.path.createFile
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
 import kotlin.io.path.pathString
@@ -19,20 +18,21 @@ import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
 
 class FileKeystoreRootTest {
-    private val tmpDirectory = Files.createTempDirectory("public-key-store-test-")
-    private val rootDirectory = tmpDirectory.resolve("root")
+    private val tmpDirectoryPath = Files.createTempDirectory("public-key-store-test-")
+    private val rootDirectoryPath = tmpDirectoryPath.resolve("root")
+    private val rootDirectoryFile = rootDirectoryPath.toFile()
 
     @BeforeEach
     fun createRootDirectory() {
-        rootDirectory.createDirectory()
+        rootDirectoryPath.createDirectory()
     }
 
     @AfterEach
     fun deleteRootDirectory() {
-        if (rootDirectory.exists()) {
-            rootDirectory.toFile().setReadable(true)
+        if (rootDirectoryPath.exists()) {
+            rootDirectoryPath.toFile().setReadable(true)
 
-            Files.walk(rootDirectory)
+            Files.walk(rootDirectoryPath)
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
                 .forEach(File::delete)
@@ -41,50 +41,50 @@ class FileKeystoreRootTest {
 
     @AfterAll
     fun deleteTmpDirectory() {
-        tmpDirectory.deleteIfExists()
+        tmpDirectoryPath.deleteIfExists()
     }
 
     @Nested
     inner class Constructor {
         @Test
         fun `Root directory should be rejected if it isn't a directory`() {
-            val rootDirectory = rootDirectory.resolve("file.txt")
-            rootDirectory.createFile()
+            val file = rootDirectoryFile.resolve("file.txt")
+            file.createNewFile()
 
             val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(rootDirectory)
+                FileKeystoreRoot(file)
             }
 
             assertEquals(
-                "Root '${rootDirectory.pathString}' isn't a directory",
+                "Root '${file.path}' isn't a directory",
                 exception.message
             )
         }
 
         @Test
         fun `Root directory should be refused if it isn't using an absolute path`() {
-            val rootDirectory = File("relative").toPath()
+            val rootDirectory = File("relative")
 
             val exception = assertThrows<FileKeystoreException> {
                 FileKeystoreRoot(rootDirectory)
             }
 
             assertEquals(
-                "Root directory must use an absolute path (got '${rootDirectory.pathString}')",
+                "Root directory must use an absolute path (got '${rootDirectory.path}')",
                 exception.message
             )
         }
 
         @Test
         fun `Root directory should be rejected if it doesn't exist`() {
-            val rootDirectory = tmpDirectory.resolve("non-existing")
+            val rootDirectory = tmpDirectoryPath.resolve("non-existing").toFile()
 
             val exception = assertThrows<FileKeystoreException> {
                 FileKeystoreRoot(rootDirectory)
             }
 
             assertEquals(
-                "Root '${rootDirectory.pathString}' doesn't exist",
+                "Root '${rootDirectory.path}' doesn't exist",
                 exception.message
             )
         }
@@ -92,14 +92,14 @@ class FileKeystoreRootTest {
         @Test
         @DisabledOnOs(OS.WINDOWS)
         fun `Root directory should be refused if it isn't readable`() {
-            rootDirectory.toFile().setReadable(false)
+            rootDirectoryPath.toFile().setReadable(false)
 
             val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(rootDirectory)
+                FileKeystoreRoot(rootDirectoryFile)
             }
 
             assertEquals(
-                "Root '${rootDirectory.pathString}' isn't readable",
+                "Root '${rootDirectoryPath.pathString}' isn't readable",
                 exception.message
             )
         }
@@ -107,14 +107,14 @@ class FileKeystoreRootTest {
         @Test
         @DisabledOnOs(OS.WINDOWS)
         fun `Root directory should be refused if it isn't writable`() {
-            rootDirectory.toFile().setWritable(false)
+            rootDirectoryPath.toFile().setWritable(false)
 
             val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(rootDirectory)
+                FileKeystoreRoot(rootDirectoryFile)
             }
 
             assertEquals(
-                "Root '${rootDirectory.pathString}' isn't writable",
+                "Root '${rootDirectoryPath.pathString}' isn't writable",
                 exception.message
             )
         }
