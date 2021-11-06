@@ -58,8 +58,18 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Root directory should be created if it doesn't already exist`() = runBlockingTest {
+        fun `Keystore directory should be created if it doesn't already exist`() = runBlockingTest {
             assertFalse(privateKeystoreRootFile.exists())
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+            keystore.saveIdentityKey(privateKey, certificate)
+
+            assertTrue(identityKeyFilePath.exists())
+        }
+
+        @Test
+        fun `Root directory should be created if it doesn't already exist`() = runBlockingTest {
+            keystoreRoot.directory.delete()
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             keystore.saveIdentityKey(privateKey, certificate)

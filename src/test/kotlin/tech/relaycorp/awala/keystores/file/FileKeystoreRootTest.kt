@@ -76,17 +76,10 @@ class FileKeystoreRootTest {
         }
 
         @Test
-        fun `Root directory should be rejected if it doesn't exist`() {
+        fun `Root directory should be accepted if it doesn't exist`() {
             val rootDirectory = tmpDirectoryPath.resolve("non-existing").toFile()
 
-            val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(rootDirectory)
-            }
-
-            assertEquals(
-                "Root '${rootDirectory.path}' doesn't exist",
-                exception.message
-            )
+            FileKeystoreRoot(rootDirectory)
         }
 
         @Test

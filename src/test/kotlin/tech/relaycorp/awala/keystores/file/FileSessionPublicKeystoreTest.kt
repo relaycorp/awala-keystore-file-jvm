@@ -40,7 +40,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
     @Nested
     inner class Save {
         @Test
-        fun `Parent directory should be reused if it already exists`() = runBlockingTest {
+        fun `Keystore directory should be reused if it already exists`() = runBlockingTest {
             @Suppress("BlockingMethodInNonBlockingContext")
             publicKeystoreRootPath.createDirectory()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
@@ -51,8 +51,18 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Parent directory should be created if it doesn't already exist`() = runBlockingTest {
+        fun `Keystore directory should be created if it doesn't already exist`() = runBlockingTest {
             assertFalse(publicKeystoreRootPath.exists())
+            val keystore = FileSessionPublicKeystore(keystoreRoot)
+
+            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+
+            readKeyData()
+        }
+
+        @Test
+        fun `Root directory should be created if it doesn't already exist`() = runBlockingTest {
+            keystoreRoot.directory.delete()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)

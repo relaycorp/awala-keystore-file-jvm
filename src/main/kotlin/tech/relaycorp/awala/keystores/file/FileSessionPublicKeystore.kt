@@ -16,7 +16,7 @@ public class FileSessionPublicKeystore(
     private val rootDirectory = keystoreRoot.directory.resolve("public")
 
     override suspend fun saveKeyData(keyData: SessionPublicKeyData, peerPrivateAddress: String) {
-        val wasDirectoryCreated = rootDirectory.mkdir()
+        val wasDirectoryCreated = rootDirectory.mkdirs()
         if (!wasDirectoryCreated && !rootDirectory.exists()) {
             throw FileKeystoreException("Failed to create root directory for public keys")
         }
