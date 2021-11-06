@@ -11,21 +11,18 @@ public class FileKeystoreRoot @Throws(FileKeystoreException::class) constructor(
                 "Root directory must use an absolute path (got '${directory.path}')"
             )
         }
-        if (!directory.exists()) {
-            throw FileKeystoreException(
-                "Root '${directory.path}' doesn't exist"
-            )
-        }
-        if (!directory.isDirectory) {
-            throw FileKeystoreException("Root '${directory.path}' isn't a directory")
-        }
+        if (directory.exists()) {
+            if (!directory.isDirectory) {
+                throw FileKeystoreException("Root '${directory.path}' isn't a directory")
+            }
 
-        // Check permissions (read and write operations are always allowed on Windows)
-        if (!directory.canRead()) {
-            throw FileKeystoreException("Root '${directory.path}' isn't readable")
-        }
-        if (!directory.canWrite()) {
-            throw FileKeystoreException("Root '${directory.path}' isn't writable")
+            // Check permissions (read and write operations are always allowed on Windows)
+            if (!directory.canRead()) {
+                throw FileKeystoreException("Root '${directory.path}' isn't readable")
+            }
+            if (!directory.canWrite()) {
+                throw FileKeystoreException("Root '${directory.path}' isn't writable")
+            }
         }
     }
 }
