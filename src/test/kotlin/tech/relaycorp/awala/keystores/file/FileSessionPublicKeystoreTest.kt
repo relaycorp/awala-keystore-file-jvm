@@ -30,7 +30,7 @@ import tech.relaycorp.relaynet.testing.pki.PDACertPath
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 class FileSessionPublicKeystoreTest : KeystoreTestCase() {
-    private val peerPrivateAddress = PDACertPath.PRIVATE_ENDPOINT.subjectPrivateAddress
+    private val peerPrivateAddress = PDACertPath.PDA.subjectPrivateAddress
 
     private val sessionKeyPair = SessionKeyPair.generate()
 
@@ -223,7 +223,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Exception should be thrown if key serialization is missing`() = runBlockingTest {
+        fun `Exception should be thrown if public key is missing`() = runBlockingTest {
             saveKeyData {
                 writeBinaryData("key_id", BsonBinary(sessionKeyPair.sessionKey.keyId))
                 writeInt32("creation_timestamp", creationTimestamp)
@@ -264,9 +264,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             assertEquals(sessionKeyPair.sessionKey, key)
         }
 
-        private fun saveKeyData(data: ByteArray) {
-            keyDataFilePath.toFile().writeBytes(data)
-        }
+        private fun saveKeyData(data: ByteArray) = keyDataFilePath.toFile().writeBytes(data)
 
         private fun saveKeyData(writeBsonFields: BsonBinaryWriter.() -> Unit) {
             val bsonSerialization = BasicOutputBuffer().use { buffer ->
