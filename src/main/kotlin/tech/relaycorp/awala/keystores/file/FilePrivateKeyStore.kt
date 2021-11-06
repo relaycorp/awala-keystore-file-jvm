@@ -6,7 +6,6 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.file.FileAlreadyExistsException
-import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import org.bson.BSONException
 import org.bson.BsonBinary
@@ -17,11 +16,7 @@ import tech.relaycorp.relaynet.keystores.PrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyStore
 
 public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : PrivateKeyStore() {
-    private val rootDirectory: Path
-
-    init {
-        rootDirectory = keystoreRoot.directory.resolve("private")
-    }
+    private val rootDirectory = keystoreRoot.directory.resolve("private")
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun saveKeyData(

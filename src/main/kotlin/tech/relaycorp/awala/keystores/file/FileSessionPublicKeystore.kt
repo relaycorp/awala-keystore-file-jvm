@@ -3,7 +3,6 @@ package tech.relaycorp.awala.keystores.file
 import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
-import java.nio.file.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.exists
 import org.bson.BSONException
@@ -17,11 +16,7 @@ import tech.relaycorp.relaynet.keystores.SessionPublicKeyStore
 public class FileSessionPublicKeystore(
     keystoreRoot: FileKeystoreRoot
 ) : SessionPublicKeyStore() {
-    private val rootDirectory: Path
-
-    init {
-        rootDirectory = keystoreRoot.directory.resolve("public")
-    }
+    private val rootDirectory = keystoreRoot.directory.resolve("public")
 
     override suspend fun saveKeyData(keyData: SessionPublicKeyData, peerPrivateAddress: String) {
         if (!rootDirectory.exists()) {
