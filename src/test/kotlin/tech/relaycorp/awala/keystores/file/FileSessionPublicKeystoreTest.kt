@@ -264,9 +264,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             assertEquals(sessionKeyPair.sessionKey, key)
         }
 
-        private fun saveKeyData(data: ByteArray) {
-            keyDataFilePath.toFile().writeBytes(data)
-        }
+        private fun saveKeyData(data: ByteArray) = keyDataFilePath.toFile().writeBytes(data)
 
         private fun saveKeyData(writeBsonFields: BsonBinaryWriter.() -> Unit) {
             val bsonSerialization = BasicOutputBuffer().use { buffer ->

@@ -4,10 +4,13 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.ByteBuffer
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
+import org.bson.BSONException
 import org.bson.BsonBinary
+import org.bson.BsonBinaryReader
 import org.bson.BsonBinaryWriter
 import org.bson.io.BasicOutputBuffer
 import tech.relaycorp.relaynet.keystores.PrivateKeyData
@@ -47,7 +50,33 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     }
 
     override suspend fun retrieveKeyData(keyId: String, privateAddress: String): PrivateKeyData? {
-        TODO("Not yet implemented")
+        val keyFile = getNodeSubdirectory(privateAddress).resolve(keyId).toFile()
+        val serialization = try {
+            makeEncryptedInputStream(keyFile).use {
+                it.readBytes()
+            }
+        } catch (exc: IOException) {
+            if (keyFile.exists()) {
+                throw FileKeystoreException("Failed to read key file", exc)
+            }
+            return null
+        }
+        val data = try {
+            BsonBinaryReader(ByteBuffer.wrap(serialization)).use {
+                it.readStartDocument()
+                val privateKeyDer = it.readBinaryData("private_key").data
+                val certificateDer = it.readBinaryData("certificate").data
+                val peerPrivateAddress = it.readString("peer_private_address")
+                PrivateKeyData(
+                    privateKeyDer,
+                    if (certificateDer.isNotEmpty()) certificateDer else null,
+                    peerPrivateAddress.ifEmpty { null },
+                )
+            }
+        } catch (exc: BSONException) {
+            throw FileKeystoreException("Key file is malformed", exc)
+        }
+        return data
     }
 
     private fun getNodeSubdirectory(privateAddress: String) =
