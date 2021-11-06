@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach
 
 abstract class KeystoreTestCase {
     private val rootDirectoryPath = Files.createTempDirectory("public-key-store-test-")
-    protected val keystoreRoot = FileKeystoreRoot(rootDirectoryPath)
+    protected val keystoreRoot = FileKeystoreRoot(rootDirectoryPath.toFile())
 
     @BeforeEach
     fun createRootDirectory() {

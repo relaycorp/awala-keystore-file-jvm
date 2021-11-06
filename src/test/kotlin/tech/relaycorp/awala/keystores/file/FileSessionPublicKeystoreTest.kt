@@ -34,7 +34,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
 
     private val sessionKeyPair = SessionKeyPair.generate()
 
-    private val publicKeystoreRootPath = keystoreRoot.directory.resolve("public")
+    private val publicKeystoreRootPath = keystoreRoot.directory.resolve("public").toPath()
     private val keyDataFilePath = publicKeystoreRootPath.resolve(peerPrivateAddress)
 
     @Nested
@@ -63,8 +63,8 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         @Test
         @DisabledOnOs(OS.WINDOWS)
         fun `Errors creating parent directory should be wrapped`() = runBlockingTest {
-            keystoreRoot.directory.toFile().setExecutable(false)
-            keystoreRoot.directory.toFile().setWritable(false)
+            keystoreRoot.directory.setExecutable(false)
+            keystoreRoot.directory.setWritable(false)
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
@@ -75,7 +75,6 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
                 "Failed to create root directory for public keys",
                 exception.message
             )
-            assertTrue(exception.cause is IOException)
         }
 
         @Test

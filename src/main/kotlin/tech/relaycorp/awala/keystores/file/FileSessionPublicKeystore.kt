@@ -1,10 +1,7 @@
 package tech.relaycorp.awala.keystores.file
 
-import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
-import kotlin.io.path.createDirectory
-import kotlin.io.path.exists
 import org.bson.BSONException
 import org.bson.BsonBinary
 import org.bson.BsonBinaryReader
@@ -19,14 +16,11 @@ public class FileSessionPublicKeystore(
     private val rootDirectory = keystoreRoot.directory.resolve("public")
 
     override suspend fun saveKeyData(keyData: SessionPublicKeyData, peerPrivateAddress: String) {
-        if (!rootDirectory.exists()) {
-            try {
-                @Suppress("BlockingMethodInNonBlockingContext")
-                rootDirectory.createDirectory()
-            } catch (exc: IOException) {
-                throw FileKeystoreException("Failed to create root directory for public keys", exc)
-            }
+        val wasDirectoryCreated = rootDirectory.mkdir()
+        if (!wasDirectoryCreated && !rootDirectory.exists()) {
+            throw FileKeystoreException("Failed to create root directory for public keys")
         }
+
         val keyDataFile = getKeyDataFile(peerPrivateAddress)
         val bsonSerialization = BasicOutputBuffer().use { buffer ->
             BsonBinaryWriter(buffer).use {
@@ -75,7 +69,6 @@ public class FileSessionPublicKeystore(
         keyDataFile.delete()
     }
 
-    private fun getKeyDataFile(peerPrivateAddress: String): File {
-        return rootDirectory.resolve(peerPrivateAddress).toFile()
-    }
+    private fun getKeyDataFile(peerPrivateAddress: String) =
+        rootDirectory.resolve(peerPrivateAddress)
 }

@@ -37,8 +37,8 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
 
     private val peerPrivateAddress = PDACertPath.PDA.subjectPrivateAddress
 
-    private val privateKeystoreRootPath = keystoreRoot.directory.resolve("private")
-    private val nodeDirectoryPath = privateKeystoreRootPath.resolve(privateAddress)
+    private val privateKeystoreRootFile = keystoreRoot.directory.resolve("private")
+    private val nodeDirectoryPath = privateKeystoreRootFile.resolve(privateAddress).toPath()
 
     private val identityKeyFilePath = nodeDirectoryPath.resolve("i-$privateAddress")
     private val sessionKeyFilePath = nodeDirectoryPath.resolve(
@@ -59,7 +59,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Root directory should be created if it doesn't already exist`() = runBlockingTest {
-            assertFalse(privateKeystoreRootPath.exists())
+            assertFalse(privateKeystoreRootFile.exists())
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             keystore.saveIdentityKey(privateKey, certificate)
@@ -186,8 +186,8 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         @Test
         @DisabledOnOs(OS.WINDOWS)
         fun `Errors creating node subdirectory should be wrapped`() = runBlockingTest {
-            keystoreRoot.directory.toFile().setExecutable(false)
-            keystoreRoot.directory.toFile().setWritable(false)
+            keystoreRoot.directory.setExecutable(false)
+            keystoreRoot.directory.setWritable(false)
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
@@ -198,7 +198,6 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
                 "Failed to create root directory for private keys",
                 exception.message
             )
-            assertTrue(exception.cause is IOException)
         }
 
         @Test
