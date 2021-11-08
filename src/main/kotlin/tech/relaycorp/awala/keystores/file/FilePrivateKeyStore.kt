@@ -10,38 +10,32 @@ import org.bson.BsonBinary
 import org.bson.BsonBinaryReader
 import org.bson.BsonBinaryWriter
 import org.bson.io.BasicOutputBuffer
+import tech.relaycorp.relaynet.keystores.IdentityPrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyStore
+import tech.relaycorp.relaynet.keystores.SessionPrivateKeyData
 
 public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : PrivateKeyStore() {
     private val rootDirectory = keystoreRoot.directory.resolve("private")
 
     @Suppress("BlockingMethodInNonBlockingContext")
-    override suspend fun saveKeyData(
-        keyId: String,
-        keyData: PrivateKeyData,
-        privateAddress: String
+    override suspend fun saveIdentityKeyData(
+        privateAddress: String,
+        keyData: IdentityPrivateKeyData
     ) {
-        val nodeSubdirectory = getNodeSubdirectory(privateAddress)
+        val keyFile = getNodeSubdirectory(privateAddress).resolve("IDENTITY")
 
-        val wereDirectoriesCreated = nodeSubdirectory.mkdirs()
-        if (!wereDirectoriesCreated && !nodeSubdirectory.exists()) {
-            throw FileKeystoreException("Failed to create root directory for private keys")
-        }
-
-        val keyFile = nodeSubdirectory.resolve(keyId)
-        val bsonSerialization = bsonSerializeKeyData(keyData)
-        try {
-            makeEncryptedOutputStream(keyFile).use {
-                it.write(bsonSerialization)
-                it.flush()
-            }
-        } catch (exc: IOException) {
-            throw FileKeystoreException("Failed to save key file", exc)
+        saveKeyFile(keyFile) {
+            writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
+            writeBinaryData("certificate", BsonBinary(keyData.certificateDer))
         }
     }
 
-    override suspend fun retrieveKeyData(keyId: String, privateAddress: String): PrivateKeyData? {
+    override suspend fun retrieveIdentityKeyData(privateAddress: String): IdentityPrivateKeyData? {
+        TODO("Not yet implemented")
+    }
+
+    public suspend fun retrieveKeyData(keyId: String, privateAddress: String): PrivateKeyData? {
         val keyFile = getNodeSubdirectory(privateAddress).resolve(keyId)
         val serialization = try {
             makeEncryptedInputStream(keyFile).use { it.readBytes() }
@@ -58,6 +52,47 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         }
     }
 
+    override suspend fun retrieveAllIdentityKeyData(): List<IdentityPrivateKeyData> {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun saveSessionKeyData(
+        keyId: String,
+        keyData: SessionPrivateKeyData,
+        privateAddress: String
+    ) {
+        val keyFile = getNodeSubdirectory(privateAddress).resolve("s-$keyId")
+
+        saveKeyFile(keyFile) {
+            writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
+            writeString("peer_private_address", keyData.peerPrivateAddress ?: "")
+        }
+    }
+
+    override suspend fun retrieveSessionKeyData(
+        keyId: String,
+        privateAddress: String
+    ): SessionPrivateKeyData? {
+        TODO("Not yet implemented")
+    }
+
+    private fun saveKeyFile(keyFile: File, bsonWriter: BsonBinaryWriter.() -> Unit) {
+        val parentDirectory = keyFile.parentFile
+        val wereDirectoriesCreated = parentDirectory.mkdirs()
+        if (!wereDirectoriesCreated && !parentDirectory.exists()) {
+            throw FileKeystoreException("Failed to create root directory for private keys")
+        }
+
+        try {
+            makeEncryptedOutputStream(keyFile).use {
+                it.write(bsonSerializeKeyData(bsonWriter))
+                it.flush()
+            }
+        } catch (exc: IOException) {
+            throw FileKeystoreException("Failed to save key file", exc)
+        }
+    }
+
     private fun getNodeSubdirectory(privateAddress: String) =
         rootDirectory.resolve(privateAddress)
 
@@ -66,16 +101,13 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     protected abstract fun makeEncryptedInputStream(file: File): InputStream
 
     private companion object {
-        fun bsonSerializeKeyData(keyData: PrivateKeyData): ByteArray =
+        fun bsonSerializeKeyData(
+            writer: BsonBinaryWriter.() -> Unit
+        ): ByteArray =
             BasicOutputBuffer().use { buffer ->
                 BsonBinaryWriter(buffer).use {
                     it.writeStartDocument()
-                    it.writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
-                    it.writeBinaryData(
-                        "certificate",
-                        BsonBinary(keyData.certificateDer ?: byteArrayOf())
-                    )
-                    it.writeString("peer_private_address", keyData.peerPrivateAddress ?: "")
+                    writer(it)
                     it.writeEndDocument()
                 }
                 buffer.toByteArray()
@@ -86,11 +118,10 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
                 it.readStartDocument()
                 val privateKeyDer = it.readBinaryData("private_key").data
                 val certificateDer = it.readBinaryData("certificate").data
-                val peerPrivateAddress = it.readString("peer_private_address")
-                PrivateKeyData(
+                // val peerPrivateAddress = it.readString("peer_private_address")
+                IdentityPrivateKeyData(
                     privateKeyDer,
-                    if (certificateDer.isNotEmpty()) certificateDer else null,
-                    peerPrivateAddress.ifEmpty { null },
+                    certificateDer,
                 )
             }
     }
