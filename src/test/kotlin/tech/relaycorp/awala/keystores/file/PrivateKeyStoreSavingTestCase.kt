@@ -1,7 +1,6 @@
 package tech.relaycorp.awala.keystores.file
 
 import java.io.IOException
-import java.nio.ByteBuffer
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
@@ -10,7 +9,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import org.bson.BsonBinaryReader
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
@@ -101,10 +99,4 @@ abstract class PrivateKeyStoreSavingTestCase(
 
     @Test
     abstract fun `Existing file should be updated if key already existed`()
-
-    protected fun readKeyData(path: Path) = BsonBinaryReader(
-        ByteBuffer.wrap(MockFilePrivateKeyStore.readFile(path.toFile()))
-    ).also {
-        it.readStartDocument()
-    }
 }
