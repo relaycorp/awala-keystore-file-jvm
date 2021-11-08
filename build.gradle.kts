@@ -32,7 +32,7 @@ dependencies {
     api("tech.relaycorp:awala:[1.55.0,2.0.0)")
     testImplementation("tech.relaycorp:awala-testing:1.3.1")
 
-    implementation("org.mongodb:bson:4.3.3")
+    implementation("org.mongodb:bson:4.3.4")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
