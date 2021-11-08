@@ -13,7 +13,6 @@ import org.bson.io.BasicOutputBuffer
 import tech.relaycorp.relaynet.keystores.IdentityPrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyStore
-import tech.relaycorp.relaynet.keystores.SessionPrivateKeyData
 
 public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : PrivateKeyStore() {
     private val rootDirectory = keystoreRoot.directory.resolve("private")
@@ -42,35 +41,27 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
             retrieveKeyData(it.resolve("IDENTITY"))!!.toIdentityPrivateKeyData()
         } ?: listOf()
 
-    override suspend fun saveSessionKeyData(
+    override suspend fun saveSessionKeySerialized(
         keyId: String,
-        keyData: SessionPrivateKeyData,
-        privateAddress: String
+        keySerialized: ByteArray,
+        privateAddress: String,
+        peerPrivateAddress: String?,
     ) {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve("s-$keyId")
-        saveKeyFile(keyFile) {
-            writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
-            writeString("peer_private_address", keyData.peerPrivateAddress ?: "")
-        }
+        val keyFile = resolveSessionKeyFile(privateAddress, keyId, peerPrivateAddress)
+        saveKeyFile(keyFile, keySerialized)
     }
 
-    override suspend fun retrieveSessionKeyData(
+    override suspend fun retrieveSessionKeySerialized(
         keyId: String,
-        privateAddress: String
-    ): SessionPrivateKeyData? {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve("s-$keyId")
-        val serialization = retrieveKeyData(keyFile) ?: return null
-        return bsonDeserializeKeyData(serialization) {
-            val privateKeyDer = readBinaryData("private_key").data
-            val peerPrivateAddress = readString("peer_private_address")
-            SessionPrivateKeyData(
-                privateKeyDer,
-                if (peerPrivateAddress != "") peerPrivateAddress else null
-            )
-        }
+        privateAddress: String,
+        peerPrivateAddress: String,
+    ): ByteArray? {
+        val boundKeyPath = resolveSessionKeyFile(privateAddress, keyId, peerPrivateAddress)
+        val unboundKeyPath = resolveSessionKeyFile(privateAddress, keyId, null)
+        return retrieveKeyData(boundKeyPath) ?: retrieveKeyData(unboundKeyPath)
     }
 
-    private fun saveKeyFile(keyFile: File, bsonWriter: BsonBinaryWriter.() -> Unit) {
+    private fun saveKeyFile(keyFile: File, serialization: ByteArray) {
         val parentDirectory = keyFile.parentFile
         val wereDirectoriesCreated = parentDirectory.mkdirs()
         if (!wereDirectoriesCreated && !parentDirectory.exists()) {
@@ -79,12 +70,16 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
 
         try {
             makeEncryptedOutputStream(keyFile).use {
-                it.write(bsonSerializeKeyData(bsonWriter))
+                it.write(serialization)
                 it.flush()
             }
         } catch (exc: IOException) {
             throw FileKeystoreException("Failed to save key file", exc)
         }
+    }
+
+    private fun saveKeyFile(keyFile: File, bsonWriter: BsonBinaryWriter.() -> Unit) {
+        saveKeyFile(keyFile, bsonSerializeKeyData(bsonWriter))
     }
 
     private fun retrieveKeyData(keyFile: File): ByteArray? {
@@ -96,6 +91,19 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
             }
             return null
         }
+    }
+
+    private fun resolveSessionKeyFile(
+        privateAddress: String,
+        keyId: String,
+        peerPrivateAddress: String?
+    ): File {
+        val nodeSubdirectory = getNodeSubdirectory(privateAddress).resolve("session")
+        val parentDirectory = if (peerPrivateAddress != null)
+            nodeSubdirectory.resolve(peerPrivateAddress)
+        else
+            nodeSubdirectory
+        return parentDirectory.resolve(keyId)
     }
 
     private fun getNodeSubdirectory(privateAddress: String) =

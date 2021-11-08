@@ -10,9 +10,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import org.bson.BSONException
-import org.bson.BsonBinaryWriter
-import org.bson.io.BasicOutputBuffer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
@@ -56,43 +53,5 @@ abstract class PrivateKeyStoreRetrievalTestCase(
         assertTrue(exception.cause is IOException)
     }
 
-    @Test
-    fun `Exception should be thrown if file is not BSON-serialized`() = runBlockingTest {
-        keyFilePath.parent.createDirectories()
-        keyFilePath.toFile().writeBytes("Not BSON".toByteArray())
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-        val exception = assertThrows<FileKeystoreException> { retrieveMethod(keystore) }
-
-        assertEquals("Key file is malformed", exception.message)
-        assertTrue(exception.cause is BSONException)
-    }
-
-    @Test
-    fun `Exception should be thrown if private key is missing`() = runBlockingTest {
-        saveKeyData(keyFilePath) { }
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-        val exception = assertThrows<FileKeystoreException> { retrieveMethod(keystore) }
-
-        assertEquals("Key file is malformed", exception.message)
-        assertTrue(exception.cause is BSONException)
-    }
-
     abstract fun `Private key should be returned if file exists`()
-
-    private fun saveKeyData(path: Path, writeBsonFields: BsonBinaryWriter.() -> Unit) {
-        if (!path.parent.exists()) {
-            path.parent.createDirectories()
-        }
-        val bsonSerialization = BasicOutputBuffer().use { buffer ->
-            BsonBinaryWriter(buffer).use {
-                it.writeStartDocument()
-                writeBsonFields(it)
-                it.writeEndDocument()
-            }
-            buffer.toByteArray()
-        }
-        MockFilePrivateKeyStore.writeFile(path.toFile(), bsonSerialization)
-    }
 }
