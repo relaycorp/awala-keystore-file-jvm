@@ -1,24 +1,12 @@
 package tech.relaycorp.awala.keystores.file
 
-import java.io.IOException
-import java.nio.file.Path
 import java.time.ZonedDateTime
-import kotlin.io.path.createDirectories
-import kotlin.io.path.exists
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import org.bson.BSONException
-import org.bson.BsonBinary
-import org.bson.BsonBinaryWriter
-import org.bson.io.BasicOutputBuffer
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.condition.DisabledOnOs
-import org.junit.jupiter.api.condition.OS
 import tech.relaycorp.relaynet.SessionKeyPair
 import tech.relaycorp.relaynet.issueEndpointCertificate
 import tech.relaycorp.relaynet.keystores.MissingKeyException
@@ -100,70 +88,13 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     }
 
     @Nested
-    inner class Retrieve {
+    inner class RetrieveIdentity : PrivateKeyStoreRetrievalTestCase(
+        keystoreRoot,
+        identityKeyFilePath,
+        { retrieveIdentityKey(privateAddress) }
+    ) {
         @Test
-        fun `Key should be reported as missing if the directory doesn't exist`() = runBlockingTest {
-            assertFalse(nodeDirectoryPath.exists())
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            assertThrows<MissingKeyException> { keystore.retrieveIdentityKey(privateAddress) }
-        }
-
-        @Test
-        fun `Key should be reported as missing if the file doesn't exist`() = runBlockingTest {
-            nodeDirectoryPath.createDirectories()
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            assertThrows<MissingKeyException> { keystore.retrieveIdentityKey(privateAddress) }
-        }
-
-        @Test
-        @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-readable and non-existing
-        fun `Exception should be thrown if file isn't readable`() = runBlockingTest {
-            saveKeyData(identityKeyFilePath) {}
-            identityKeyFilePath.toFile().setReadable(false)
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieveIdentityKey(privateAddress)
-            }
-
-            assertEquals("Failed to read key file", exception.message)
-            assertTrue(exception.cause is IOException)
-        }
-
-        @Test
-        fun `Exception should be thrown if file is not BSON-serialized`() = runBlockingTest {
-            nodeDirectoryPath.createDirectories()
-            identityKeyFilePath.toFile().writeBytes("Not BSON".toByteArray())
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieveIdentityKey(privateAddress)
-            }
-
-            assertEquals("Key file is malformed", exception.message)
-            assertTrue(exception.cause is BSONException)
-        }
-
-        @Test
-        fun `Exception should be thrown if private key is missing`() = runBlockingTest {
-            saveKeyData(identityKeyFilePath) {
-                writeBinaryData("certificate", BsonBinary(certificate.serialize()))
-                writeString("peer_private_address", privateAddress)
-            }
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieveIdentityKey(privateAddress)
-            }
-
-            assertEquals("Key file is malformed", exception.message)
-            assertTrue(exception.cause is BSONException)
-        }
-
-        @Test
-        fun `Private key should be returned if file exists and is valid`() = runBlockingTest {
+        override fun `Private key should be returned if file exists`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey, certificate)
 
@@ -180,84 +111,6 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             val key = keystore.retrieveIdentityKey(privateAddress)
 
             assertEquals(certificate, key.certificate)
-        }
-
-        @Test
-        fun `Certificate should not be returned if absent`() = runBlockingTest {
-            saveKeyData(identityKeyFilePath) {
-                writeBinaryData("private_key", BsonBinary(privateKey.encoded))
-                writeString("peer_private_address", privateAddress)
-            }
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieveIdentityKey(privateAddress)
-            }
-
-            assertEquals("Key file is malformed", exception.message)
-            assertTrue(exception.cause is BSONException)
-        }
-
-        @Test
-        fun `Peer private address should be returned if present`() = runBlockingTest {
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveSessionKey(
-                sessionKeypair.privateKey,
-                sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
-            )
-
-            // Check that the key is bound to the peer
-            keystore.retrieveSessionKey(
-                sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
-            )
-            assertThrows<MissingKeyException> {
-                keystore.retrieveSessionKey(
-                    sessionKeypair.sessionKey.keyId,
-                    privateAddress,
-                    "not $peerPrivateAddress"
-                )
-            }
-        }
-
-        @Test
-        fun `Peer private address should not be returned if absent`() = runBlockingTest {
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveSessionKey(
-                sessionKeypair.privateKey,
-                sessionKeypair.sessionKey.keyId,
-                privateAddress,
-            )
-
-            // Check that the key is unbound
-            keystore.retrieveSessionKey(
-                sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
-            )
-            keystore.retrieveSessionKey(
-                sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                "not $peerPrivateAddress"
-            )
-        }
-
-        private fun saveKeyData(path: Path, writeBsonFields: BsonBinaryWriter.() -> Unit) {
-            if (!nodeDirectoryPath.exists()) {
-                nodeDirectoryPath.createDirectories()
-            }
-            val bsonSerialization = BasicOutputBuffer().use { buffer ->
-                BsonBinaryWriter(buffer).use {
-                    it.writeStartDocument()
-                    writeBsonFields(it)
-                    it.writeEndDocument()
-                }
-                buffer.toByteArray()
-            }
-            MockFilePrivateKeyStore.writeFile(path.toFile(), bsonSerialization)
         }
     }
 
@@ -344,6 +197,83 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             val savedKeyData = readKeyData(sessionKeyFilePath)
             savedKeyData.readBinaryData("private_key")
             assertEquals("", savedKeyData.readString("peer_private_address"))
+        }
+    }
+
+    @Nested
+    inner class RetrieveSession : PrivateKeyStoreRetrievalTestCase(
+        keystoreRoot,
+        sessionKeyFilePath,
+        {
+            retrieveSessionKey(
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress
+            )
+        }
+    ) {
+        override fun `Private key should be returned if file exists`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                privateAddress
+            )
+
+            val sessionPrivateKey = keystore.retrieveSessionKey(
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress
+            )
+
+            assertEquals(sessionKeypair.privateKey, sessionPrivateKey)
+        }
+
+        @Test
+        fun `Peer private address should be returned if present`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress
+            )
+
+            // Check that the key is bound to the peer
+            keystore.retrieveSessionKey(
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress
+            )
+            assertThrows<MissingKeyException> {
+                keystore.retrieveSessionKey(
+                    sessionKeypair.sessionKey.keyId,
+                    privateAddress,
+                    "not $peerPrivateAddress"
+                )
+            }
+        }
+
+        @Test
+        fun `Peer private address should not be returned if absent`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+            )
+
+            // Check that the key is unbound
+            keystore.retrieveSessionKey(
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress
+            )
+            keystore.retrieveSessionKey(
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                "not $peerPrivateAddress"
+            )
         }
     }
 

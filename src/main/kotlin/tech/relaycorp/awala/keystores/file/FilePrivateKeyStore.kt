@@ -24,7 +24,6 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         keyData: IdentityPrivateKeyData
     ) {
         val keyFile = getNodeSubdirectory(privateAddress).resolve("IDENTITY")
-
         saveKeyFile(keyFile) {
             writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
             writeBinaryData("certificate", BsonBinary(keyData.certificateDer))
@@ -32,23 +31,12 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     }
 
     override suspend fun retrieveIdentityKeyData(privateAddress: String): IdentityPrivateKeyData? {
-        TODO("Not yet implemented")
-    }
-
-    public suspend fun retrieveKeyData(keyId: String, privateAddress: String): PrivateKeyData? {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve(keyId)
-        val serialization = try {
-            makeEncryptedInputStream(keyFile).use { it.readBytes() }
-        } catch (exc: IOException) {
-            if (keyFile.exists()) {
-                throw FileKeystoreException("Failed to read key file", exc)
-            }
-            return null
-        }
-        return try {
-            bsonDeserializeKeyData(serialization)
-        } catch (exc: BSONException) {
-            throw FileKeystoreException("Key file is malformed", exc)
+        val keyFile = getNodeSubdirectory(privateAddress).resolve("IDENTITY")
+        val serialization = retrieveKeyData(keyFile) ?: return null
+        return bsonDeserializeKeyData(serialization) {
+            val privateKeyDer = readBinaryData("private_key").data
+            val certificateDer = readBinaryData("certificate").data
+            IdentityPrivateKeyData(privateKeyDer, certificateDer)
         }
     }
 
@@ -62,7 +50,6 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         privateAddress: String
     ) {
         val keyFile = getNodeSubdirectory(privateAddress).resolve("s-$keyId")
-
         saveKeyFile(keyFile) {
             writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
             writeString("peer_private_address", keyData.peerPrivateAddress ?: "")
@@ -73,7 +60,16 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         keyId: String,
         privateAddress: String
     ): SessionPrivateKeyData? {
-        TODO("Not yet implemented")
+        val keyFile = getNodeSubdirectory(privateAddress).resolve("s-$keyId")
+        val serialization = retrieveKeyData(keyFile) ?: return null
+        return bsonDeserializeKeyData(serialization) {
+            val privateKeyDer = readBinaryData("private_key").data
+            val peerPrivateAddress = readString("peer_private_address")
+            SessionPrivateKeyData(
+                privateKeyDer,
+                if (peerPrivateAddress != "") peerPrivateAddress else null
+            )
+        }
     }
 
     private fun saveKeyFile(keyFile: File, bsonWriter: BsonBinaryWriter.() -> Unit) {
@@ -90,6 +86,17 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
             }
         } catch (exc: IOException) {
             throw FileKeystoreException("Failed to save key file", exc)
+        }
+    }
+
+    private fun retrieveKeyData(keyFile: File): ByteArray? {
+        return try {
+            makeEncryptedInputStream(keyFile).use { it.readBytes() }
+        } catch (exc: IOException) {
+            if (keyFile.exists()) {
+                throw FileKeystoreException("Failed to read key file", exc)
+            }
+            return null
         }
     }
 
@@ -113,16 +120,17 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
                 buffer.toByteArray()
             }
 
-        fun bsonDeserializeKeyData(serialization: ByteArray) =
-            BsonBinaryReader(ByteBuffer.wrap(serialization)).use {
-                it.readStartDocument()
-                val privateKeyDer = it.readBinaryData("private_key").data
-                val certificateDer = it.readBinaryData("certificate").data
-                // val peerPrivateAddress = it.readString("peer_private_address")
-                IdentityPrivateKeyData(
-                    privateKeyDer,
-                    certificateDer,
-                )
+        fun <T : PrivateKeyData> bsonDeserializeKeyData(
+            serialization: ByteArray,
+            reader: BsonBinaryReader.() -> T
+        ): T =
+            try {
+                BsonBinaryReader(ByteBuffer.wrap(serialization)).use {
+                    it.readStartDocument()
+                    reader(it)
+                }
+            } catch (exc: BSONException) {
+                throw FileKeystoreException("Key file is malformed", exc)
             }
     }
 }
