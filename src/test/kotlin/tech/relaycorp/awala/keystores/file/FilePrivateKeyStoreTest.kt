@@ -1,6 +1,8 @@
 package tech.relaycorp.awala.keystores.file
 
 import java.time.ZonedDateTime
+import kotlin.io.path.createDirectories
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import tech.relaycorp.relaynet.SessionKeyPair
 import tech.relaycorp.relaynet.issueEndpointCertificate
+import tech.relaycorp.relaynet.keystores.IdentityKeyPair
 import tech.relaycorp.relaynet.keystores.MissingKeyException
 import tech.relaycorp.relaynet.testing.pki.KeyPairSet
 import tech.relaycorp.relaynet.testing.pki.PDACertPath
@@ -111,6 +114,57 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             val key = keystore.retrieveIdentityKey(privateAddress)
 
             assertEquals(certificate, key.certificate)
+        }
+    }
+
+    @Nested
+    inner class AllIdentityKeys {
+        @Test
+        fun `Nothing should be returned if store is empty`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+            val allIdentityKeys = keystore.retrieveAllIdentityKeys()
+
+            assertEquals(0, allIdentityKeys.size)
+        }
+
+        @Test
+        fun `All identity key pairs should be returned`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveIdentityKey(privateKey, certificate)
+            val extraPrivateKey = KeyPairSet.PDA_GRANTEE.private
+            val extraCertificate = PDACertPath.PDA
+            keystore.saveIdentityKey(extraPrivateKey, extraCertificate)
+
+            val allIdentityKeys = keystore.retrieveAllIdentityKeys()
+
+            assertEquals(2, allIdentityKeys.size)
+            assertContains(allIdentityKeys, IdentityKeyPair(privateKey, certificate))
+            assertContains(allIdentityKeys, IdentityKeyPair(extraPrivateKey, extraCertificate))
+        }
+
+        @Test
+        fun `Irrelevant subdirectories should be ignored`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveIdentityKey(privateKey, certificate)
+            privateKeystoreRootFile.resolve("invalid").toPath().createDirectories()
+
+            val allIdentityKeys = keystore.retrieveAllIdentityKeys()
+
+            assertEquals(1, allIdentityKeys.size)
+            assertContains(allIdentityKeys, IdentityKeyPair(privateKey, certificate))
+        }
+
+        @Test
+        fun `Irrelevant files should be ignored`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveIdentityKey(privateKey, certificate)
+            privateKeystoreRootFile.resolve("invalid").createNewFile()
+
+            val allIdentityKeys = keystore.retrieveAllIdentityKeys()
+
+            assertEquals(1, allIdentityKeys.size)
+            assertContains(allIdentityKeys, IdentityKeyPair(privateKey, certificate))
         }
     }
 

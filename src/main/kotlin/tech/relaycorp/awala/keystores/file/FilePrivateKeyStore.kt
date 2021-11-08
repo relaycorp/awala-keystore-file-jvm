@@ -32,17 +32,15 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
 
     override suspend fun retrieveIdentityKeyData(privateAddress: String): IdentityPrivateKeyData? {
         val keyFile = getNodeSubdirectory(privateAddress).resolve("IDENTITY")
-        val serialization = retrieveKeyData(keyFile) ?: return null
-        return bsonDeserializeKeyData(serialization) {
-            val privateKeyDer = readBinaryData("private_key").data
-            val certificateDer = readBinaryData("certificate").data
-            IdentityPrivateKeyData(privateKeyDer, certificateDer)
-        }
+        return retrieveKeyData(keyFile)?.toIdentityPrivateKeyData()
     }
 
-    override suspend fun retrieveAllIdentityKeyData(): List<IdentityPrivateKeyData> {
-        TODO("Not yet implemented")
-    }
+    override suspend fun retrieveAllIdentityKeyData(): List<IdentityPrivateKeyData> =
+        rootDirectory.listFiles()?.filter {
+            it.isDirectory && it.resolve("IDENTITY").exists()
+        }?.map {
+            retrieveKeyData(it.resolve("IDENTITY"))!!.toIdentityPrivateKeyData()
+        } ?: listOf()
 
     override suspend fun saveSessionKeyData(
         keyId: String,
@@ -106,6 +104,12 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     protected abstract fun makeEncryptedOutputStream(file: File): OutputStream
 
     protected abstract fun makeEncryptedInputStream(file: File): InputStream
+
+    private fun ByteArray.toIdentityPrivateKeyData() = bsonDeserializeKeyData(this) {
+        val privateKeyDer = readBinaryData("private_key").data
+        val certificateDer = readBinaryData("certificate").data
+        IdentityPrivateKeyData(privateKeyDer, certificateDer)
+    }
 
     private companion object {
         fun bsonSerializeKeyData(
