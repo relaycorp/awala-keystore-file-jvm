@@ -119,6 +119,20 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         IdentityPrivateKeyData(privateKeyDer, certificateDer)
     }
 
+    /**
+     * Delete all the private keys associated with [privateAddress].
+     */
+    override suspend fun deleteKeys(privateAddress: String) {
+        getNodeSubdirectory(privateAddress).deleteRecursively()
+    }
+
+    /**
+     * Delete all the private keys associated with [peerPrivateAddress].
+     */
+    override suspend fun deleteSessionKeysForPeer(peerPrivateAddress: String) {
+        TODO("Not yet implemented")
+    }
+
     private companion object {
         fun bsonSerializeKeyData(
             writer: BsonBinaryWriter.() -> Unit
