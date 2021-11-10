@@ -18,6 +18,8 @@ import org.bson.io.BasicOutputBuffer
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 import tech.relaycorp.relaynet.SessionKeyPair
 import tech.relaycorp.relaynet.issueEndpointCertificate
 import tech.relaycorp.relaynet.keystores.IdentityKeyPair
@@ -427,6 +429,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS)
         fun `Exception should be thrown if node directory couldn't be deleted`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey, certificate)
@@ -534,6 +537,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS)
         fun `Exception should be thrown if a directory couldn't be deleted`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
