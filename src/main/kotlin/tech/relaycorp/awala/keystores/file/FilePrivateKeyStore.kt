@@ -5,6 +5,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
+import kotlin.jvm.Throws
 import org.bson.BSONException
 import org.bson.BsonBinary
 import org.bson.BsonBinaryReader
@@ -122,8 +123,12 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     /**
      * Delete all the private keys associated with [privateAddress].
      */
+    @Throws(FileKeystoreException::class)
     override suspend fun deleteKeys(privateAddress: String) {
-        getNodeSubdirectory(privateAddress).deleteRecursively()
+        val deletionSucceeded = getNodeSubdirectory(privateAddress).deleteRecursively()
+        if (!deletionSucceeded) {
+            throw FileKeystoreException("Failed to delete node directory for $privateAddress")
+        }
     }
 
     /**
