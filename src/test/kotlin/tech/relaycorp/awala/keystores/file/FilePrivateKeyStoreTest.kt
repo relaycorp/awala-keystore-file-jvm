@@ -49,6 +49,13 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         byteArrayToHex(sessionKeypair.sessionKey.keyId)
     )
 
+    @Test
+    fun `Root directory should be exposed`() {
+        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+        assertEquals(privateKeystoreRootFile, keystore.rootDirectory)
+    }
+
     @Nested
     inner class SaveIdentity : PrivateKeyStoreSavingTestCase(
         keystoreRoot,

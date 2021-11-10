@@ -15,7 +15,8 @@ import tech.relaycorp.relaynet.keystores.PrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyStore
 
 public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : PrivateKeyStore() {
-    private val rootDirectory = keystoreRoot.directory.resolve("private")
+    @Suppress("MemberVisibilityCanBePrivate")
+    public val rootDirectory: File = keystoreRoot.directory.resolve("private")
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun saveIdentityKeyData(

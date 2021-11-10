@@ -1,5 +1,6 @@
 package tech.relaycorp.awala.keystores.file
 
+import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
 import org.bson.BSONException
@@ -13,7 +14,8 @@ import tech.relaycorp.relaynet.keystores.SessionPublicKeyStore
 public class FileSessionPublicKeystore(
     keystoreRoot: FileKeystoreRoot
 ) : SessionPublicKeyStore() {
-    private val rootDirectory = keystoreRoot.directory.resolve("public")
+    @Suppress("MemberVisibilityCanBePrivate")
+    public val rootDirectory: File = keystoreRoot.directory.resolve("public")
 
     override suspend fun saveKeyData(keyData: SessionPublicKeyData, peerPrivateAddress: String) {
         val wasDirectoryCreated = rootDirectory.mkdirs()
