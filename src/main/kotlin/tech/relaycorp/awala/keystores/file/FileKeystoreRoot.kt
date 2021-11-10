@@ -6,11 +6,6 @@ public class FileKeystoreRoot @Throws(FileKeystoreException::class) constructor(
     internal val directory: File
 ) {
     init {
-        if (!directory.isAbsolute) {
-            throw FileKeystoreException(
-                "Root directory must use an absolute path (got '${directory.path}')"
-            )
-        }
         if (directory.exists()) {
             if (!directory.isDirectory) {
                 throw FileKeystoreException("Root '${directory.path}' isn't a directory")
