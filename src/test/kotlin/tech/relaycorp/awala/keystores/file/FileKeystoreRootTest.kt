@@ -8,6 +8,7 @@ import kotlin.io.path.deleteIfExists
 import kotlin.io.path.exists
 import kotlin.io.path.pathString
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -62,17 +63,17 @@ class FileKeystoreRootTest {
         }
 
         @Test
-        fun `Root directory should be refused if it isn't using an absolute path`() {
-            val rootDirectory = File("relative")
+        fun `Root directory should be accepted if it's absolute`() {
+            assertTrue(rootDirectoryPath.isAbsolute)
 
-            val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(rootDirectory)
-            }
+            FileKeystoreRoot(rootDirectoryPath.toFile())
+        }
 
-            assertEquals(
-                "Root directory must use an absolute path (got '${rootDirectory.path}')",
-                exception.message
-            )
+        @Test
+        fun `Root directory should be accepted if it's relative`() {
+            val relativeRootDirectory = File("relative")
+
+            FileKeystoreRoot(relativeRootDirectory)
         }
 
         @Test
