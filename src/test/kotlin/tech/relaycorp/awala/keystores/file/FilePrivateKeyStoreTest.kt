@@ -15,7 +15,6 @@ import org.bson.BSONException
 import org.bson.BsonBinaryReader
 import org.bson.BsonBinaryWriter
 import org.bson.io.BasicOutputBuffer
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -477,12 +476,6 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         @Test
         fun `Keys linked to other peers should not be deleted`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveSessionKey(
-                sessionKeypair.privateKey,
-                sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress,
-            )
             val peer2PrivateAddress = "Peer2Address"
             val peer2SessionKeypair = SessionKeyPair.generate()
             keystore.saveSessionKey(
@@ -536,19 +529,29 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         @Test
         fun `Nothing should happen if the root directory doesn't exist`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+        }
+
+        @Test
+        fun `Exception should be thrown if a directory couldn't be deleted`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
                 privateAddress,
                 peerPrivateAddress,
             )
+            boundSessionKeyFilePath.parent.toFile().setWritable(false)
 
-            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
-        }
+            val exception = assertThrows<FileKeystoreException> {
+                keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+            }
 
-        @Test
-        @Disabled
-        fun `Exception should be thrown if a directory couldn't be deleted`() {
+            assertEquals(
+                "Failed to delete all keys for peer $peerPrivateAddress",
+                exception.message
+            )
         }
     }
 
