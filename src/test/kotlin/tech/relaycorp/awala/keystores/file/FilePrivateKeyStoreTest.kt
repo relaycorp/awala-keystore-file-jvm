@@ -7,6 +7,7 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
@@ -17,9 +18,12 @@ import org.bson.io.BasicOutputBuffer
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.condition.DisabledOnOs
+import org.junit.jupiter.api.condition.OS
 import tech.relaycorp.relaynet.SessionKeyPair
 import tech.relaycorp.relaynet.issueEndpointCertificate
 import tech.relaycorp.relaynet.keystores.IdentityKeyPair
+import tech.relaycorp.relaynet.keystores.MissingKeyException
 import tech.relaycorp.relaynet.testing.pki.KeyPairSet
 import tech.relaycorp.relaynet.testing.pki.PDACertPath
 
@@ -379,6 +383,179 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             )
 
             assertEquals(sessionKeypair.privateKey.encoded.asList(), privateKey.encoded.asList())
+        }
+    }
+
+    @Nested
+    inner class DeleteKeys {
+        @Test
+        fun `Node directory should be deleted even if it contains keys`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+            )
+
+            keystore.deleteKeys(privateAddress)
+
+            assertFalse(nodeDirectoryPath.exists())
+        }
+
+        @Test
+        fun `Other node directories shouldn't be deleted`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveIdentityKey(privateKey, certificate)
+            val node2Directory = nodeDirectoryPath.resolveSibling("node2")
+            node2Directory.createDirectories()
+            val node3Directory = nodeDirectoryPath.resolveSibling("node3")
+            node3Directory.createDirectories()
+
+            keystore.deleteKeys(privateAddress)
+
+            assertTrue(node2Directory.exists())
+            assertTrue(node3Directory.exists())
+        }
+
+        @Test
+        fun `Nothing should happen if the node directory doesn't exist`() = runBlockingTest {
+            assertFalse(nodeDirectoryPath.exists())
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+            keystore.deleteKeys(privateAddress)
+
+            assertFalse(nodeDirectoryPath.exists())
+        }
+
+        @Test
+        @DisabledOnOs(OS.WINDOWS)
+        fun `Exception should be thrown if node directory couldn't be deleted`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveIdentityKey(privateKey, certificate)
+            nodeDirectoryPath.toFile().setWritable(false)
+
+            val exception =
+                assertThrows<FileKeystoreException> { keystore.deleteKeys(privateAddress) }
+
+            assertEquals(
+                "Failed to delete node directory for $privateAddress",
+                exception.message
+            )
+        }
+    }
+
+    @Nested
+    inner class DeleteSessionKeysForPeer {
+        @Test
+        fun `Keys linked to peer should be deleted across all nodes`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress,
+            )
+            val node2PrivateAddress = "AnotherPrivateAddress"
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                node2PrivateAddress,
+                peerPrivateAddress,
+            )
+            val boundSessionKey2FilePath = privateKeystoreRootFile.resolve(node2PrivateAddress)
+                .resolve("session")
+                .resolve(peerPrivateAddress)
+                .resolve(byteArrayToHex(sessionKeypair.sessionKey.keyId))
+                .toPath()
+            assertTrue(boundSessionKey2FilePath.exists())
+
+            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+
+            assertFalse(boundSessionKeyFilePath.parent.exists())
+            assertFalse(boundSessionKey2FilePath.parent.exists())
+        }
+
+        @Test
+        fun `Keys linked to other peers should not be deleted`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            val peer2PrivateAddress = "Peer2Address"
+            val peer2SessionKeypair = SessionKeyPair.generate()
+            keystore.saveSessionKey(
+                peer2SessionKeypair.privateKey,
+                peer2SessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peer2PrivateAddress,
+            )
+
+            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+
+            keystore.retrieveSessionKey(
+                peer2SessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peer2PrivateAddress,
+            )
+        }
+
+        @Test
+        fun `Unbound keys should not be deleted`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress,
+            )
+            val unboundSessionKeypair = SessionKeyPair.generate()
+            keystore.saveSessionKey(
+                unboundSessionKeypair.privateKey,
+                unboundSessionKeypair.sessionKey.keyId,
+                privateAddress,
+            )
+
+            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+
+            assertThrows<MissingKeyException> {
+                keystore.retrieveSessionKey(
+                    sessionKeypair.sessionKey.keyId,
+                    privateAddress,
+                    peerPrivateAddress,
+                )
+            }
+            keystore.retrieveSessionKey(
+                unboundSessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress,
+            )
+        }
+
+        @Test
+        fun `Nothing should happen if the root directory doesn't exist`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+        }
+
+        @Test
+        @DisabledOnOs(OS.WINDOWS)
+        fun `Exception should be thrown if a directory couldn't be deleted`() = runBlockingTest {
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+            keystore.saveSessionKey(
+                sessionKeypair.privateKey,
+                sessionKeypair.sessionKey.keyId,
+                privateAddress,
+                peerPrivateAddress,
+            )
+            boundSessionKeyFilePath.parent.toFile().setWritable(false)
+
+            val exception = assertThrows<FileKeystoreException> {
+                keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+            }
+
+            assertEquals(
+                "Failed to delete all keys for peer $peerPrivateAddress",
+                exception.message
+            )
         }
     }
 

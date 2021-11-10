@@ -1,10 +1,9 @@
 package tech.relaycorp.awala.keystores.file
 
-import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import kotlin.io.path.createDirectory
 import kotlin.io.path.exists
+import kotlin.test.assertTrue
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 
@@ -21,9 +20,11 @@ abstract class KeystoreTestCase {
 
     @AfterEach
     fun deleteRootDirectory() {
-        Files.walk(rootDirectoryPath)
-            .sorted(Comparator.reverseOrder())
-            .map(Path::toFile)
-            .forEach(File::delete)
+        // Make contents writable first or else the deletion will fail
+        Files.walk(rootDirectoryPath).forEach { it.toFile().setWritable(true) }
+        assertTrue(
+            rootDirectoryPath.toFile().deleteRecursively(),
+            "Root directory should've been deleted",
+        )
     }
 }

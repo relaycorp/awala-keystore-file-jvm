@@ -29,7 +29,7 @@ dependencies {
     // Align versions of all Kotlin components
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
-    api("tech.relaycorp:awala:[1.55.2,2.0.0)")
+    api("tech.relaycorp:awala:[1.57.0,2.0.0)")
     testImplementation("tech.relaycorp:awala-testing:1.3.1")
 
     implementation("org.mongodb:bson:4.3.4")
@@ -82,7 +82,7 @@ tasks.jacocoTestCoverageVerification {
                 value = "MISSEDCOUNT"
 
                 // Filesystem readability/writability checks don't work on Windows
-                maximum = (if (OperatingSystem.current().isWindows) 6 else 0).toBigDecimal()
+                maximum = (if (OperatingSystem.current().isWindows) 9 else 0).toBigDecimal()
             }
         }
     }
