@@ -72,7 +72,6 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         try {
             makeEncryptedOutputStream(keyFile).use {
                 it.write(serialization)
-                it.flush()
             }
         } catch (exc: IOException) {
             throw FileKeystoreException("Failed to save key file", exc)
