@@ -1,7 +1,7 @@
 {
   "name": "ignored",
   "devDependencies": {
-    "@relaycorp/shared-config": "^1.6.0",
+    "@relaycorp/shared-config": "^1.6.1",
     "gradle-semantic-release-plugin": "^1.6.0"
   }
 }
