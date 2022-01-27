@@ -28,10 +28,6 @@ class MockFilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : FilePrivateKeySt
         private val header = "HEADER".toByteArray()
         private val charset = Charset.defaultCharset()
 
-        fun writeFile(file: File, contents: ByteArray) {
-            file.writeBytes(header + contents)
-        }
-
         fun readFile(file: File): ByteArray {
             val fileContents = file.readBytes()
             assertEquals(

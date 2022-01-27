@@ -1,8 +1,6 @@
 package tech.relaycorp.awala.keystores.file
 
-import java.nio.ByteBuffer
 import java.nio.file.Path
-import java.time.ZonedDateTime
 import kotlin.io.path.createDirectories
 import kotlin.io.path.exists
 import kotlin.test.assertContains
@@ -12,27 +10,22 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import org.bson.BSONException
-import org.bson.BsonBinaryReader
-import org.bson.BsonBinaryWriter
-import org.bson.io.BasicOutputBuffer
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
 import tech.relaycorp.relaynet.SessionKeyPair
-import tech.relaycorp.relaynet.issueEndpointCertificate
-import tech.relaycorp.relaynet.keystores.IdentityKeyPair
 import tech.relaycorp.relaynet.keystores.MissingKeyException
 import tech.relaycorp.relaynet.testing.pki.KeyPairSet
 import tech.relaycorp.relaynet.testing.pki.PDACertPath
+import tech.relaycorp.relaynet.wrappers.privateAddress
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 class FilePrivateKeyStoreTest : KeystoreTestCase() {
-    private val certificate = PDACertPath.PRIVATE_ENDPOINT
     private val privateKey = KeyPairSet.PRIVATE_ENDPOINT.private
-    private val privateAddress = certificate.subjectPrivateAddress
+    private val privateAddress = privateKey.privateAddress
     private val sessionKeypair = SessionKeyPair.generate()
 
     private val peerPrivateAddress = PDACertPath.PDA.subjectPrivateAddress
@@ -60,62 +53,24 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     inner class SaveIdentity : PrivateKeyStoreSavingTestCase(
         keystoreRoot,
         identityKeyFilePath,
-        { saveIdentityKey(privateKey, certificate) }
+        { saveIdentityKey(privateKey) }
     ) {
 
         @Test
         override fun `Private key should be stored`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
 
             val savedKeyData = readKeyData(identityKeyFilePath)
             assertEquals(
                 privateKey.encoded.asList(),
-                savedKeyData.readBinaryData("private_key").data.asList()
+                savedKeyData.asList()
             )
         }
 
-        @Test
-        override fun `Existing file should be updated if key already existed`() = runBlockingTest {
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
-
-            // Replace the certificate
-            val differentCertificate = issueEndpointCertificate(
-                KeyPairSet.PRIVATE_ENDPOINT.public,
-                privateKey,
-                ZonedDateTime.now().plusMinutes(1)
-            )
-            keystore.saveIdentityKey(privateKey, differentCertificate)
-
-            val savedKeyData = readKeyData(identityKeyFilePath)
-            savedKeyData.readBinaryData("private_key")
-            assertEquals(
-                differentCertificate.serialize().asList(),
-                savedKeyData.readBinaryData("certificate").data.asList()
-            )
-        }
-
-        @Test
-        fun `Certificate should be stored`() = runBlockingTest {
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            keystore.saveIdentityKey(privateKey, certificate)
-
-            val savedKeyData = readKeyData(identityKeyFilePath)
-            savedKeyData.readBinaryData("private_key")
-            assertEquals(
-                certificate.serialize().asList(),
-                savedKeyData.readBinaryData("certificate").data.asList()
-            )
-        }
-
-        private fun readKeyData(path: Path) = BsonBinaryReader(
-            ByteBuffer.wrap(MockFilePrivateKeyStore.readFile(path.toFile()))
-        ).also {
-            it.readStartDocument()
-        }
+        private fun readKeyData(path: Path) =
+            MockFilePrivateKeyStore.readFile(path.toFile())
     }
 
     @Nested
@@ -126,63 +81,24 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     ) {
 
         @Test
-        fun `Exception should be thrown if file is not BSON-serialized`() = runBlockingTest {
-            identityKeyFilePath.parent.createDirectories()
-            identityKeyFilePath.toFile().writeBytes("Not BSON".toByteArray())
+        fun `Exception should be thrown if private key does not exist`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-            val exception =
-                assertThrows<FileKeystoreException> { keystore.retrieveIdentityKey(privateAddress) }
+            val exception = assertThrows<MissingKeyException> {
+                keystore.retrieveIdentityKey(privateAddress)
+            }
 
-            assertEquals("Key file is malformed", exception.message)
-            assertTrue(exception.cause is BSONException)
-        }
-
-        @Test
-        fun `Exception should be thrown if private key is missing`() = runBlockingTest {
-            saveKeyData(identityKeyFilePath) { }
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-            val exception =
-                assertThrows<FileKeystoreException> { keystore.retrieveIdentityKey(privateAddress) }
-
-            assertEquals("Key file is malformed", exception.message)
-            assertTrue(exception.cause is BSONException)
+            assertEquals("There is no identity key for $privateAddress", exception.message)
         }
 
         @Test
         override fun `Private key should be returned if file exists`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
 
             val key = keystore.retrieveIdentityKey(privateAddress)
 
-            assertEquals(privateKey, key.privateKey)
-        }
-
-        @Test
-        fun `Certificate should be returned if present`() = runBlockingTest {
-            val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
-
-            val key = keystore.retrieveIdentityKey(privateAddress)
-
-            assertEquals(certificate, key.certificate)
-        }
-
-        private fun saveKeyData(path: Path, writeBsonFields: BsonBinaryWriter.() -> Unit) {
-            if (!path.parent.exists()) {
-                path.parent.createDirectories()
-            }
-            val bsonSerialization = BasicOutputBuffer().use { buffer ->
-                BsonBinaryWriter(buffer).use {
-                    it.writeStartDocument()
-                    writeBsonFields(it)
-                    it.writeEndDocument()
-                }
-                buffer.toByteArray()
-            }
-            MockFilePrivateKeyStore.writeFile(path.toFile(), bsonSerialization)
+            assertEquals(privateKey, key)
         }
     }
 
@@ -200,40 +116,39 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         @Test
         fun `All identity key pairs should be returned`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
             val extraPrivateKey = KeyPairSet.PDA_GRANTEE.private
-            val extraCertificate = PDACertPath.PDA
-            keystore.saveIdentityKey(extraPrivateKey, extraCertificate)
+            keystore.saveIdentityKey(extraPrivateKey)
 
             val allIdentityKeys = keystore.retrieveAllIdentityKeys()
 
             assertEquals(2, allIdentityKeys.size)
-            assertContains(allIdentityKeys, IdentityKeyPair(privateKey, certificate))
-            assertContains(allIdentityKeys, IdentityKeyPair(extraPrivateKey, extraCertificate))
+            assertContains(allIdentityKeys, privateKey)
+            assertContains(allIdentityKeys, extraPrivateKey)
         }
 
         @Test
         fun `Irrelevant subdirectories should be ignored`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
             privateKeystoreRootFile.resolve("invalid").toPath().createDirectories()
 
             val allIdentityKeys = keystore.retrieveAllIdentityKeys()
 
             assertEquals(1, allIdentityKeys.size)
-            assertContains(allIdentityKeys, IdentityKeyPair(privateKey, certificate))
+            assertContains(allIdentityKeys, privateKey)
         }
 
         @Test
         fun `Irrelevant files should be ignored`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
             privateKeystoreRootFile.resolve("invalid").createNewFile()
 
             val allIdentityKeys = keystore.retrieveAllIdentityKeys()
 
             assertEquals(1, allIdentityKeys.size)
-            assertContains(allIdentityKeys, IdentityKeyPair(privateKey, certificate))
+            assertContains(allIdentityKeys, privateKey)
         }
     }
 
@@ -267,7 +182,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        override fun `Existing file should be updated if key already existed`() = runBlockingTest {
+        fun `Existing file should be updated if key already existed`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -398,7 +313,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         @Test
         fun `Node directory should be deleted even if it contains keys`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
@@ -413,7 +328,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         @Test
         fun `Other node directories shouldn't be deleted`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
             val node2Directory = nodeDirectoryPath.resolveSibling("node2")
             node2Directory.createDirectories()
             val node3Directory = nodeDirectoryPath.resolveSibling("node3")
@@ -439,7 +354,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         @DisabledOnOs(OS.WINDOWS)
         fun `Exception should be thrown if node directory couldn't be deleted`() = runBlockingTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
-            keystore.saveIdentityKey(privateKey, certificate)
+            keystore.saveIdentityKey(privateKey)
             nodeDirectoryPath.toFile().setWritable(false)
 
             val exception =
