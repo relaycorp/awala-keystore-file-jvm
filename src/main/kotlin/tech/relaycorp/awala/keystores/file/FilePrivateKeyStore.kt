@@ -4,13 +4,6 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
-import java.nio.ByteBuffer
-import org.bson.BSONException
-import org.bson.BsonBinary
-import org.bson.BsonBinaryReader
-import org.bson.BsonBinaryWriter
-import org.bson.io.BasicOutputBuffer
-import tech.relaycorp.relaynet.keystores.IdentityPrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyStore
 
@@ -21,25 +14,21 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun saveIdentityKeyData(
         privateAddress: String,
-        keyData: IdentityPrivateKeyData
+        keyData: PrivateKeyData
     ) {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve("IDENTITY")
-        saveKeyFile(keyFile) {
-            writeBinaryData("private_key", BsonBinary(keyData.privateKeyDer))
-            writeBinaryData("certificate", BsonBinary(keyData.certificateDer))
-        }
+        val keyFile = getNodeSubdirectory(privateAddress).resolve("identity")
+        saveKeyFile(keyFile, keyData.privateKeyDer)
     }
 
-    override suspend fun retrieveIdentityKeyData(privateAddress: String): IdentityPrivateKeyData? {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve("IDENTITY")
-        return retrieveKeyData(keyFile)?.toIdentityPrivateKeyData()
+    override suspend fun retrieveIdentityKeyData(privateAddress: String): PrivateKeyData? {
+        val keyFile = getNodeSubdirectory(privateAddress).resolve("identity")
+        return retrieveKeyData(keyFile)?.let { PrivateKeyData(it) }
     }
 
-    override suspend fun retrieveAllIdentityKeyData(): List<IdentityPrivateKeyData> =
+    override suspend fun retrieveAllIdentityKeyData(): List<PrivateKeyData> =
         getNodeDirectories()
-            ?.map { it.resolve("IDENTITY") }
-            ?.filter(File::exists)
-            ?.map { retrieveKeyData(it)!!.toIdentityPrivateKeyData() }
+            ?.map { it.resolve("identity") }
+            ?.mapNotNull { path -> retrieveKeyData(path)?.let { PrivateKeyData(it) } }
             ?: listOf()
 
     override suspend fun saveSessionKeySerialized(
@@ -79,10 +68,6 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         }
     }
 
-    private fun saveKeyFile(keyFile: File, bsonWriter: BsonBinaryWriter.() -> Unit) {
-        saveKeyFile(keyFile, bsonSerializeKeyData(bsonWriter))
-    }
-
     private fun retrieveKeyData(keyFile: File): ByteArray? {
         return try {
             makeEncryptedInputStream(keyFile).use { it.readBytes() }
@@ -116,12 +101,6 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
 
     protected abstract fun makeEncryptedInputStream(file: File): InputStream
 
-    private fun ByteArray.toIdentityPrivateKeyData() = bsonDeserializeKeyData(this) {
-        val privateKeyDer = readBinaryData("private_key").data
-        val certificateDer = readBinaryData("certificate").data
-        IdentityPrivateKeyData(privateKeyDer, certificateDer)
-    }
-
     /**
      * Delete all the private keys associated with [privateAddress].
      */
@@ -146,32 +125,5 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         if (deletionSucceeded == false) {
             throw FileKeystoreException("Failed to delete all keys for peer $peerPrivateAddress")
         }
-    }
-
-    private companion object {
-        fun bsonSerializeKeyData(
-            writer: BsonBinaryWriter.() -> Unit
-        ): ByteArray =
-            BasicOutputBuffer().use { buffer ->
-                BsonBinaryWriter(buffer).use {
-                    it.writeStartDocument()
-                    writer(it)
-                    it.writeEndDocument()
-                }
-                buffer.toByteArray()
-            }
-
-        fun <T : PrivateKeyData> bsonDeserializeKeyData(
-            serialization: ByteArray,
-            reader: BsonBinaryReader.() -> T
-        ): T =
-            try {
-                BsonBinaryReader(ByteBuffer.wrap(serialization)).use {
-                    it.readStartDocument()
-                    reader(it)
-                }
-            } catch (exc: BSONException) {
-                throw FileKeystoreException("Key file is malformed", exc)
-            }
     }
 }

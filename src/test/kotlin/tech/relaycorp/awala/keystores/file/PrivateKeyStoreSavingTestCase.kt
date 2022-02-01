@@ -96,7 +96,4 @@ abstract class PrivateKeyStoreSavingTestCase(
 
     @Test
     abstract fun `Private key should be stored`()
-
-    @Test
-    abstract fun `Existing file should be updated if key already existed`()
 }

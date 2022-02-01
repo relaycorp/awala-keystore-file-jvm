@@ -7,3 +7,7 @@ docs/vendor
 # Ignore `semantic-release` dependencies
 node_modules/
 package-lock.json
+
+.idea
+.DS_Store
+local.properties
