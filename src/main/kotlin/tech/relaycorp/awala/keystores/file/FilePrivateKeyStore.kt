@@ -21,13 +21,13 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     }
 
     override suspend fun retrieveIdentityKeyData(privateAddress: String): PrivateKeyData? {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve("IDENTITY")
+        val keyFile = getNodeSubdirectory(privateAddress).resolve("identity")
         return retrieveKeyData(keyFile)?.let { PrivateKeyData(it) }
     }
 
     override suspend fun retrieveAllIdentityKeyData(): List<PrivateKeyData> =
         getNodeDirectories()
-            ?.map { it.resolve("IDENTITY") }
+            ?.map { it.resolve("identity") }
             ?.mapNotNull { path -> retrieveKeyData(path)?.let { PrivateKeyData(it) } }
             ?: listOf()
 
