@@ -33,7 +33,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     private val privateKeystoreRootFile = keystoreRoot.directory.resolve("private")
     private val nodeDirectoryPath = privateKeystoreRootFile.resolve(privateAddress).toPath()
 
-    private val identityKeyFilePath = nodeDirectoryPath.resolve("IDENTITY")
+    private val identityKeyFilePath = nodeDirectoryPath.resolve("identity")
     private val boundSessionKeyFilePath =
         nodeDirectoryPath.resolve("session").resolve(peerPrivateAddress).resolve(
             byteArrayToHex(sessionKeypair.sessionKey.keyId)
