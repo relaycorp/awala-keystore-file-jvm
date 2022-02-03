@@ -48,7 +48,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
     @Test
     fun `Root directory should be exposed`() {
-        val keystore = MockFileCertificateStore(keystoreRoot)
+        val keystore = FileCertificateStore(keystoreRoot)
 
         assertEquals(storeRootFile, keystore.rootDirectory)
     }
@@ -57,7 +57,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
     inner class SaveData {
         @Test
         fun `Certificate should be stored and retrieved`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(certificate, chain)
 
@@ -77,14 +77,14 @@ class FileCertificateStoreTest : KeystoreTestCase() {
             with(addressFiles.first()) {
                 assertTrue(exists())
                 assertTrue(
-                    name.startsWith("CERT-${certificate.expiryDate.toInstant().toEpochMilli()}-")
+                    name.startsWith("${certificate.expiryDate.toInstant().toEpochMilli()}-")
                 )
             }
         }
 
         @Test
         fun `Certificate stored multiple times should override`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             repeat(3) {
                 keystore.save(certificate, chain)
@@ -110,7 +110,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         fun `Errors creating address subdirectory should be wrapped`() = runBlockingTest {
             keystoreRoot.directory.setExecutable(false)
             keystoreRoot.directory.setWritable(false)
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
                 keystore.save(certificate, chain)
@@ -127,7 +127,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         fun `Errors creating or updating file should be wrapped`() = runBlockingTest {
             addressFolder.mkdirs()
             addressFolder.setWritable(false)
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
                 keystore.save(certificate, chain)
@@ -143,7 +143,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `All valid certificates should be retrieved`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(certificate, chain)
             keystore.save(longerCertificate, chain)
@@ -174,7 +174,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `If there are no certificates return empty list`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             val result = keystore.retrieveAll(address)
             assertTrue(result.isEmpty())
@@ -183,11 +183,11 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         @Test
         fun `If there is a non-readable certificate file throw FileKeystoreException`() =
             runBlockingTest {
-                val keystore = MockFileCertificateStore(keystoreRoot)
+                val keystore = FileCertificateStore(keystoreRoot)
 
                 val timestamp = Instant.now().plusSeconds(1).toEpochMilli()
                 addressFolder.mkdirs()
-                val file = addressFolder.resolve("CERT-$timestamp-12345")
+                val file = addressFolder.resolve("$timestamp-12345")
                 file.createNewFile()
                 file.setReadable(false)
 
@@ -203,7 +203,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         @Test
         fun `If there is an invalid certificate file name throw FileKeystoreException`() =
             runBlockingTest {
-                val keystore = MockFileCertificateStore(keystoreRoot)
+                val keystore = FileCertificateStore(keystoreRoot)
 
                 addressFolder.mkdirs()
                 addressFolder.resolve("INVALID").createNewFile()
@@ -220,16 +220,16 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         @Test
         fun `If there is a certificate file name with invalid timestamp throw exception`() =
             runBlockingTest {
-                val keystore = MockFileCertificateStore(keystoreRoot)
+                val keystore = FileCertificateStore(keystoreRoot)
 
                 addressFolder.mkdirs()
-                addressFolder.resolve("CERT-AAA-AAA").createNewFile()
+                addressFolder.resolve("AAA-AAA").createNewFile()
 
                 val exception = assertThrows<FileKeystoreException> {
                     keystore.retrieveAll(address)
                 }
                 assertEquals(
-                    "Invalid certificate file name: CERT-AAA-AAA",
+                    "Invalid certificate file name: AAA-AAA",
                     exception.message
                 )
             }
@@ -240,11 +240,11 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Certificates that are expired are deleted`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(certificate, chain)
             // create empty expired cert file
-            addressFolder.resolve("CERT-0-12345").createNewFile()
+            addressFolder.resolve("0-12345").createNewFile()
 
             assertEquals(2, addressFolder.listFiles()!!.size)
 
@@ -255,7 +255,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Skip if root folder couldn't be read`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             storeRootFile.setReadable(false)
 
@@ -265,7 +265,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Skip if address folder couldn't be read`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             addressFolder.mkdirs()
             addressFolder.setReadable(false)
@@ -276,7 +276,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Skip files inside root folder`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             storeRootFile.mkdirs()
             storeRootFile.resolve("file").createNewFile()
@@ -286,10 +286,10 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Skip if expired certificate couldn't be deleted`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             addressFolder.mkdirs()
-            val file = addressFolder.resolve("CERT-0-12345")
+            val file = addressFolder.resolve("0-12345")
             file.createNewFile()
             storeRootFile.setWritable(false)
 
@@ -302,7 +302,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Certificates of given address are deleted`() = runBlockingTest {
-            val keystore = MockFileCertificateStore(keystoreRoot)
+            val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(certificate, chain)
             keystore.save(unrelatedCertificate, chain)
@@ -331,7 +331,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         @Test
         fun `Exception should be thrown if address directory couldn't be deleted`() =
             runBlockingTest {
-                val keystore = MockFileCertificateStore(keystoreRoot)
+                val keystore = FileCertificateStore(keystoreRoot)
 
                 addressFolder.mkdirs()
                 storeRootFile.setWritable(false)
@@ -348,7 +348,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         @Test
         fun `Nothing should happen to unrelated certificates if deleting non-existing address`() =
             runBlockingTest {
-                val keystore = MockFileCertificateStore(keystoreRoot)
+                val keystore = FileCertificateStore(keystoreRoot)
 
                 keystore.save(certificate, chain)
                 keystore.delete("unrelated")

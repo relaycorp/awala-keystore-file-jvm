@@ -1,16 +1,16 @@
 package tech.relaycorp.awala.keystores.file
 
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
 import java.security.MessageDigest
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import tech.relaycorp.relaynet.keystores.CertificateStore
 
-public abstract class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateStore() {
+public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateStore() {
 
     @Suppress("MemberVisibilityCanBePrivate")
     public val rootDirectory: File = keystoreRoot.directory.resolve("certificate")
@@ -23,7 +23,7 @@ public abstract class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : Cer
         val expirationTimestamp = leafCertificateExpiryDate.toTimestamp()
         val dataDigest = certificationPathData.toDigest()
         val certFile = getNodeSubdirectory(subjectPrivateAddress).resolve(
-            "$FILE_PREFIX-$expirationTimestamp-$dataDigest"
+            "$expirationTimestamp-$dataDigest"
         )
         saveCertificationFile(certFile, certificationPathData)
     }
@@ -45,7 +45,7 @@ public abstract class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : Cer
             ?.map { addressFile ->
                 addressFile
                     .listFiles() // address certificates
-                    ?.filter { it.getExpiryDateFromName().isBefore(ZonedDateTime.now()) }
+                    ?.filter { !it.getExpiryDateFromName().isAfter(ZonedDateTime.now()) }
                     ?.forEach { it.delete() }
             }
     }
@@ -69,7 +69,7 @@ public abstract class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : Cer
             )
         }
         try {
-            makeEncryptedOutputStream(certFile).use {
+            FileOutputStream(certFile).use {
                 it.write(serialization)
                 it.flush()
             }
@@ -80,7 +80,7 @@ public abstract class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : Cer
 
     private fun retrieveData(file: File): ByteArray {
         return try {
-            makeEncryptedInputStream(file).use { it.readBytes() }
+            FileInputStream(file).use { it.readBytes() }
         } catch (exc: IOException) {
             throw FileKeystoreException("Failed to read certification file", exc)
         }
@@ -94,21 +94,13 @@ public abstract class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : Cer
 
     private fun File.getExpiryDateFromName(): ZonedDateTime =
         name.split("-")
-            .getOrNull(1)
+            .getOrNull(0)
             ?.toLongOrNull()
             ?.toZonedDateTime()
             ?: throw FileKeystoreException("Invalid certificate file name: $name")
 
     private fun getNodeSubdirectory(privateAddress: String) =
         rootDirectory.resolve(privateAddress)
-
-    protected abstract fun makeEncryptedOutputStream(file: File): OutputStream
-
-    protected abstract fun makeEncryptedInputStream(file: File): InputStream
-
-    private companion object {
-        private const val FILE_PREFIX = "CERT"
-    }
 }
 
 internal fun ByteArray.toDigest() =
