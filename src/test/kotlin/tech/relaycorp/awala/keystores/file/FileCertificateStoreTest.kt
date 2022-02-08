@@ -181,6 +181,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-readable and non-existing
         fun `If there is a non-readable certificate file throw FileKeystoreException`() =
             runBlockingTest {
                 val keystore = FileCertificateStore(keystoreRoot)
@@ -329,6 +330,7 @@ class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
+        @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-writable and non-existing
         fun `Exception should be thrown if address directory couldn't be deleted`() =
             runBlockingTest {
                 val keystore = FileCertificateStore(keystoreRoot)
