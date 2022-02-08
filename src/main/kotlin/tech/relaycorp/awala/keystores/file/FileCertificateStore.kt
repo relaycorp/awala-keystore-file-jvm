@@ -94,8 +94,8 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
 
     private fun File.getExpiryDateFromName(): ZonedDateTime =
         name.split("-")
-            .getOrNull(0)
-            ?.toLongOrNull()
+            .first()
+            .toLongOrNull()
             ?.toZonedDateTime()
             ?: throw FileKeystoreException("Invalid certificate file name: $name")
 
