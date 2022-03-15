@@ -18,19 +18,23 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
     override suspend fun saveData(
         subjectPrivateAddress: String,
         leafCertificateExpiryDate: ZonedDateTime,
-        certificationPathData: ByteArray
+        certificationPathData: ByteArray,
+        issuerPrivateAddress: String
     ) {
         val expirationTimestamp = leafCertificateExpiryDate.toTimestamp()
         val dataDigest = certificationPathData.toDigest()
-        val certFile = getNodeSubdirectory(subjectPrivateAddress).resolve(
+        val certFile = getNodeSubdirectory(subjectPrivateAddress, issuerPrivateAddress).resolve(
             "$expirationTimestamp-$dataDigest"
         )
         saveCertificationFile(certFile, certificationPathData)
     }
 
-    override suspend fun retrieveData(subjectPrivateAddress: String): List<ByteArray> {
+    override suspend fun retrieveData(
+        subjectPrivateAddress: String,
+        issuerPrivateAddress: String
+    ): List<ByteArray> {
         val certificateFiles =
-            getNodeSubdirectory(subjectPrivateAddress).listFiles()
+            getNodeSubdirectory(subjectPrivateAddress, issuerPrivateAddress).listFiles()
                 ?: return emptyList()
 
         return certificateFiles
@@ -40,19 +44,22 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
 
     override suspend fun deleteExpired() {
         rootDirectory
-            .listFiles() // addresses
+            .listFiles() // issuer addresses
+            ?.filter(File::isDirectory)
+            ?.flatMap { it.listFiles().orEmpty().toList() } // subject addresses
             ?.filter(File::isDirectory)
             ?.map { addressFile ->
                 addressFile
-                    .listFiles() // address certificates
+                    .listFiles() // subject certificates
                     ?.filter { !it.getExpiryDateFromName().isAfter(ZonedDateTime.now()) }
                     ?.forEach { it.delete() }
             }
     }
 
     @Throws(FileKeystoreException::class)
-    override fun delete(subjectPrivateAddress: String) {
-        val deletionSucceeded = getNodeSubdirectory(subjectPrivateAddress).deleteRecursively()
+    override fun delete(subjectPrivateAddress: String, issuerPrivateAddress: String) {
+        val deletionSucceeded =
+            getNodeSubdirectory(subjectPrivateAddress, issuerPrivateAddress).deleteRecursively()
         if (!deletionSucceeded) {
             throw FileKeystoreException(
                 "Failed to delete node directory for $subjectPrivateAddress"
@@ -99,8 +106,11 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
             ?.toZonedDateTime()
             ?: throw FileKeystoreException("Invalid certificate file name: $name")
 
-    private fun getNodeSubdirectory(privateAddress: String) =
-        rootDirectory.resolve(privateAddress)
+    private fun getNodeSubdirectory(
+        subjectPrivateAddress: String,
+        issuerPrivateAddress: String
+    ) =
+        rootDirectory.resolve(issuerPrivateAddress).resolve(subjectPrivateAddress)
 }
 
 internal fun ByteArray.toDigest() =
