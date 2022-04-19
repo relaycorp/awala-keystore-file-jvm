@@ -13,6 +13,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
 import org.junit.jupiter.api.condition.OS
 import tech.relaycorp.relaynet.issueGatewayCertificate
+import tech.relaycorp.relaynet.pki.CertificationPath
 import tech.relaycorp.relaynet.testing.pki.KeyPairSet
 import tech.relaycorp.relaynet.testing.pki.PDACertPath
 
@@ -61,7 +62,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         fun `Certificate should be stored and retrieved`() = runBlockingTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
-            keystore.save(certificate, chain, issuerAddress)
+            keystore.save(CertificationPath(certificate, chain), issuerAddress)
 
             val result = keystore.retrieveAll(address, issuerAddress)
             assertEquals(1, result.size)
@@ -71,7 +72,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
             )
             assertEquals(
                 chain.map { it.serialize().asList() },
-                result.first().chain.map { it.serialize().asList() }
+                result.first().certificateAuthorities.map { it.serialize().asList() }
             )
 
             val addressFiles = addressFolder.listFiles()!!
@@ -89,7 +90,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
             val keystore = FileCertificateStore(keystoreRoot)
 
             repeat(3) {
-                keystore.save(certificate, chain, issuerAddress)
+                keystore.save(CertificationPath(certificate, chain), issuerAddress)
             }
 
             val result = keystore.retrieveAll(address, issuerAddress)
@@ -100,7 +101,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
             )
             assertEquals(
                 chain.map { it.serialize().asList() },
-                result.first().chain.map { it.serialize().asList() }
+                result.first().certificateAuthorities.map { it.serialize().asList() }
             )
 
             val addressFiles = addressFolder.listFiles()!!
@@ -111,8 +112,8 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         internal fun `Certificates by different issuers should not override`() = runBlockingTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
-            keystore.save(certificate, chain, issuerAddress)
-            keystore.save(certificate, emptyList(), issuerAddress + "diff")
+            keystore.save(CertificationPath(certificate, chain), issuerAddress)
+            keystore.save(CertificationPath(certificate, emptyList()), issuerAddress + "diff")
 
             val result = keystore.retrieveAll(address, issuerAddress)
             assertEquals(1, result.size)
@@ -122,7 +123,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
             )
             assertEquals(
                 chain.map { it.serialize().asList() },
-                result.first().chain.map { it.serialize().asList() }
+                result.first().certificateAuthorities.map { it.serialize().asList() }
             )
 
             val resultDiff = keystore.retrieveAll(address, issuerAddress + "diff")
@@ -132,7 +133,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
                 resultDiff.first().leafCertificate.serialize().asList()
             )
             assertTrue(
-                resultDiff.first().chain.isEmpty()
+                resultDiff.first().certificateAuthorities.isEmpty()
             )
         }
 
@@ -144,7 +145,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
             val keystore = FileCertificateStore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.save(certificate, chain, issuerAddress)
+                keystore.save(CertificationPath(certificate, chain), issuerAddress)
             }
 
             assertEquals(
@@ -161,7 +162,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
             val keystore = FileCertificateStore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.save(certificate, chain, issuerAddress)
+                keystore.save(CertificationPath(certificate, chain), issuerAddress)
             }
 
             assertEquals("Failed to save certification file", exception.message)
@@ -176,9 +177,9 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         fun `All valid certificates should be retrieved`() = runBlockingTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
-            keystore.save(certificate, chain, issuerAddress)
-            keystore.save(longerCertificate, chain, issuerAddress)
-            keystore.save(aboutToExpireCertificate, chain, issuerAddress)
+            keystore.save(CertificationPath(certificate, chain), issuerAddress)
+            keystore.save(CertificationPath(longerCertificate, chain), issuerAddress)
+            keystore.save(CertificationPath(aboutToExpireCertificate, chain), issuerAddress)
 
             Thread.sleep(300) // wait for aboutToExpireCertificate to expire
 
@@ -189,7 +190,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
                     certificate.serialize().asList() ==
                         certPath.leafCertificate.serialize().asList() &&
                         chain.map { it.serialize().asList() } ==
-                        certPath.chain.map { it.serialize().asList() }
+                        certPath.certificateAuthorities.map { it.serialize().asList() }
                 }
             )
 
@@ -198,7 +199,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
                     longerCertificate.serialize().asList() ==
                         certPath.leafCertificate.serialize().asList() &&
                         chain.map { it.serialize().asList() } ==
-                        certPath.chain.map { it.serialize().asList() }
+                        certPath.certificateAuthorities.map { it.serialize().asList() }
                 }
             )
         }
@@ -207,7 +208,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         fun `Certificates should not be retrieved with wrong issuer`() = runBlockingTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
-            keystore.save(certificate, chain, issuerAddress)
+            keystore.save(CertificationPath(certificate, chain), issuerAddress)
 
             val result = keystore.retrieveAll(address, "wrong")
             assertTrue(result.isEmpty())
@@ -284,7 +285,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         fun `Certificates that are expired are deleted`() = runBlockingTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
-            keystore.save(certificate, chain, issuerAddress)
+            keystore.save(CertificationPath(certificate, chain), issuerAddress)
             // create empty expired cert file
             addressFolder.resolve("0-12345").createNewFile()
 
@@ -367,9 +368,9 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         fun `Certificates of given subject and issuer addresses are deleted`() = runBlockingTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
-            keystore.save(certificate, chain, issuerAddress)
-            keystore.save(unrelatedCertificate, chain, issuerAddress)
-            keystore.save(certificate, chain, issuerAddress + "diff")
+            keystore.save(CertificationPath(certificate, chain), issuerAddress)
+            keystore.save(CertificationPath(unrelatedCertificate, chain), issuerAddress)
+            keystore.save(CertificationPath(certificate, chain), issuerAddress + "diff")
 
             assertEquals(
                 1,
@@ -423,7 +424,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
             runBlockingTest {
                 val keystore = FileCertificateStore(keystoreRoot)
 
-                keystore.save(certificate, chain, issuerAddress)
+                keystore.save(CertificationPath(certificate, chain), issuerAddress)
                 keystore.delete("unrelated", issuerAddress)
 
                 assertEquals(
