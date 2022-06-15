@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
@@ -22,7 +22,7 @@ abstract class PrivateKeyStoreSavingTestCase(
     private val saveMethod: suspend FilePrivateKeyStore.() -> Unit
 ) {
     @Test
-    fun `Parent subdirectory should be reused if it exists`() = runBlockingTest {
+    fun `Parent subdirectory should be reused if it exists`() = runTest {
         keyFilePath.parent.createDirectories()
         val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
@@ -32,7 +32,7 @@ abstract class PrivateKeyStoreSavingTestCase(
     }
 
     @Test
-    fun `Parent directory should be created if it doesn't exist`() = runBlockingTest {
+    fun `Parent directory should be created if it doesn't exist`() = runTest {
         assertFalse(keyFilePath.parent.exists())
         val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
@@ -42,7 +42,7 @@ abstract class PrivateKeyStoreSavingTestCase(
     }
 
     @Test
-    fun `Root directory should be created if it doesn't exist`() = runBlockingTest {
+    fun `Root directory should be created if it doesn't exist`() = runTest {
         keystoreRoot.directory.delete()
         val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
@@ -53,7 +53,7 @@ abstract class PrivateKeyStoreSavingTestCase(
 
     @Test
     @DisabledOnOs(OS.WINDOWS)
-    fun `Errors creating node subdirectory should be wrapped`() = runBlockingTest {
+    fun `Errors creating node subdirectory should be wrapped`() = runTest {
         keystoreRoot.directory.setExecutable(false)
         keystoreRoot.directory.setWritable(false)
         val keystore = MockFilePrivateKeyStore(keystoreRoot)
@@ -70,7 +70,7 @@ abstract class PrivateKeyStoreSavingTestCase(
 
     @Test
     @DisabledOnOs(OS.WINDOWS)
-    fun `Errors creating or updating file should be wrapped`() = runBlockingTest {
+    fun `Errors creating or updating file should be wrapped`() = runTest {
         keyFilePath.parent.createDirectories()
         keyFilePath.toFile().createNewFile()
         keyFilePath.toFile().setWritable(false)
@@ -85,7 +85,7 @@ abstract class PrivateKeyStoreSavingTestCase(
     }
 
     @Test
-    fun `New file should be created if key is new`() = runBlockingTest {
+    fun `New file should be created if key is new`() = runTest {
         assertFalse(keyFilePath.exists())
         val keystore = MockFilePrivateKeyStore(keystoreRoot)
 

@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.condition.DisabledOnOs
@@ -24,7 +24,7 @@ abstract class PrivateKeyStoreRetrievalTestCase(
     private val retrieveMethod: suspend FilePrivateKeyStore.() -> Unit
 ) {
     @Test
-    fun `Key should be reported as missing if parent directory doesn't exist`() = runBlockingTest {
+    fun `Key should be reported as missing if parent directory doesn't exist`() = runTest {
         assertFalse(keyFilePath.parent.exists())
         val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
@@ -32,7 +32,7 @@ abstract class PrivateKeyStoreRetrievalTestCase(
     }
 
     @Test
-    fun `Key should be reported as missing if the file doesn't exist`() = runBlockingTest {
+    fun `Key should be reported as missing if the file doesn't exist`() = runTest {
         keyFilePath.parent.createDirectories()
         val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
@@ -41,7 +41,7 @@ abstract class PrivateKeyStoreRetrievalTestCase(
 
     @Test
     @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-readable and non-existing
-    fun `Exception should be thrown if file isn't readable`() = runBlockingTest {
+    fun `Exception should be thrown if file isn't readable`() = runTest {
         keyFilePath.parent.createDirectories()
         keyFilePath.createFile()
         keyFilePath.toFile().setReadable(false)

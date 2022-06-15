@@ -6,7 +6,7 @@ import java.time.ZonedDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -59,7 +59,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
     @Nested
     inner class SaveData {
         @Test
-        fun `Certificate should be stored and retrieved`() = runBlockingTest {
+        fun `Certificate should be stored and retrieved`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(CertificationPath(certificate, chain), issuerAddress)
@@ -86,7 +86,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Certificate stored multiple times should override`() = runBlockingTest {
+        fun `Certificate stored multiple times should override`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             repeat(3) {
@@ -109,7 +109,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        internal fun `Certificates by different issuers should not override`() = runBlockingTest {
+        internal fun `Certificates by different issuers should not override`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(CertificationPath(certificate, chain), issuerAddress)
@@ -139,7 +139,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         @DisabledOnOs(OS.WINDOWS)
-        fun `Errors creating address subdirectory should be wrapped`() = runBlockingTest {
+        fun `Errors creating address subdirectory should be wrapped`() = runTest {
             keystoreRoot.directory.setExecutable(false)
             keystoreRoot.directory.setWritable(false)
             val keystore = FileCertificateStore(keystoreRoot)
@@ -156,7 +156,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         @DisabledOnOs(OS.WINDOWS)
-        fun `Errors creating or updating file should be wrapped`() = runBlockingTest {
+        fun `Errors creating or updating file should be wrapped`() = runTest {
             addressFolder.mkdirs()
             addressFolder.setWritable(false)
             val keystore = FileCertificateStore(keystoreRoot)
@@ -174,7 +174,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
     inner class RetrieveData {
 
         @Test
-        fun `All valid certificates should be retrieved`() = runBlockingTest {
+        fun `All valid certificates should be retrieved`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(CertificationPath(certificate, chain), issuerAddress)
@@ -205,7 +205,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Certificates should not be retrieved with wrong issuer`() = runBlockingTest {
+        fun `Certificates should not be retrieved with wrong issuer`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(CertificationPath(certificate, chain), issuerAddress)
@@ -215,7 +215,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `If there are no certificates return empty list`() = runBlockingTest {
+        fun `If there are no certificates return empty list`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             val result = keystore.retrieveAll(address, issuerAddress)
@@ -225,7 +225,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         @Test
         @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-readable and non-existing
         fun `If there is a non-readable certificate file throw FileKeystoreException`() =
-            runBlockingTest {
+            runTest {
                 val keystore = FileCertificateStore(keystoreRoot)
 
                 val timestamp = Instant.now().plusSeconds(1).toEpochMilli()
@@ -245,7 +245,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `If there is an invalid certificate file name throw FileKeystoreException`() =
-            runBlockingTest {
+            runTest {
                 val keystore = FileCertificateStore(keystoreRoot)
 
                 addressFolder.mkdirs()
@@ -262,7 +262,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `If there is a certificate file name with invalid timestamp throw exception`() =
-            runBlockingTest {
+            runTest {
                 val keystore = FileCertificateStore(keystoreRoot)
 
                 addressFolder.mkdirs()
@@ -282,7 +282,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
     inner class DeleteExpired {
 
         @Test
-        fun `Certificates that are expired are deleted`() = runBlockingTest {
+        fun `Certificates that are expired are deleted`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(CertificationPath(certificate, chain), issuerAddress)
@@ -297,7 +297,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Skip if root folder couldn't be read`() = runBlockingTest {
+        fun `Skip if root folder couldn't be read`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             storeRootFile.setReadable(false)
@@ -307,7 +307,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Skip if issuer folder couldn't be read`() = runBlockingTest {
+        fun `Skip if issuer folder couldn't be read`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             issuerFolder.mkdirs()
@@ -318,7 +318,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Skip if address folder couldn't be read`() = runBlockingTest {
+        fun `Skip if address folder couldn't be read`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             addressFolder.mkdirs()
@@ -329,7 +329,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Skip files inside root folder`() = runBlockingTest {
+        fun `Skip files inside root folder`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             storeRootFile.mkdirs()
@@ -339,7 +339,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Skip files inside issuer folder`() = runBlockingTest {
+        fun `Skip files inside issuer folder`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             issuerFolder.mkdirs()
@@ -349,7 +349,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Skip if expired certificate couldn't be deleted`() = runBlockingTest {
+        fun `Skip if expired certificate couldn't be deleted`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             addressFolder.mkdirs()
@@ -365,7 +365,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
     inner class Delete {
 
         @Test
-        fun `Certificates of given subject and issuer addresses are deleted`() = runBlockingTest {
+        fun `Certificates of given subject and issuer addresses are deleted`() = runTest {
             val keystore = FileCertificateStore(keystoreRoot)
 
             keystore.save(CertificationPath(certificate, chain), issuerAddress)
@@ -404,7 +404,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
         @Test
         @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-writable and non-existing
         fun `Exception should be thrown if address directory couldn't be deleted`() =
-            runBlockingTest {
+            runTest {
                 val keystore = FileCertificateStore(keystoreRoot)
 
                 addressFolder.mkdirs()
@@ -421,7 +421,7 @@ internal class FileCertificateStoreTest : KeystoreTestCase() {
 
         @Test
         fun `Nothing should happen to unrelated certificates if deleting non-existing address`() =
-            runBlockingTest {
+            runTest {
                 val keystore = FileCertificateStore(keystoreRoot)
 
                 keystore.save(CertificationPath(certificate, chain), issuerAddress)

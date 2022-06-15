@@ -10,7 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.bson.BSONException
 import org.bson.BsonBinary
 import org.bson.BsonBinaryReader
@@ -40,7 +40,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
     @Nested
     inner class Save {
         @Test
-        fun `Keystore directory should be reused if it already exists`() = runBlockingTest {
+        fun `Keystore directory should be reused if it already exists`() = runTest {
             @Suppress("BlockingMethodInNonBlockingContext")
             publicKeystoreRootPath.createDirectory()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
@@ -51,7 +51,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Keystore directory should be created if it doesn't already exist`() = runBlockingTest {
+        fun `Keystore directory should be created if it doesn't already exist`() = runTest {
             assertFalse(publicKeystoreRootPath.exists())
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
@@ -61,7 +61,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Root directory should be created if it doesn't already exist`() = runBlockingTest {
+        fun `Root directory should be created if it doesn't already exist`() = runTest {
             keystoreRoot.directory.delete()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
@@ -72,7 +72,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
 
         @Test
         @DisabledOnOs(OS.WINDOWS)
-        fun `Errors creating parent directory should be wrapped`() = runBlockingTest {
+        fun `Errors creating parent directory should be wrapped`() = runTest {
             keystoreRoot.directory.setExecutable(false)
             keystoreRoot.directory.setWritable(false)
             val keystore = FileSessionPublicKeystore(keystoreRoot)
@@ -88,7 +88,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `New file should be created if there is no prior key for peer`() = runBlockingTest {
+        fun `New file should be created if there is no prior key for peer`() = runTest {
             assertFalse(keyDataFilePath.exists())
             val creationTime = ZonedDateTime.now()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
@@ -111,7 +111,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Existing file should be updated if there is a prior key for peer`() = runBlockingTest {
+        fun `Existing file should be updated if there is a prior key for peer`() = runTest {
             val now = ZonedDateTime.now()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
             keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress, now.minusSeconds(1))
@@ -135,7 +135,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Errors creating or updating file should be wrapped`() = runBlockingTest {
+        fun `Errors creating or updating file should be wrapped`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
             // Make the read operation work but the subsequent write operation fail
             keystore.save(
@@ -173,7 +173,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
 
         @Test
         fun `Key should be reported as missing if root directory doesn't exist`() =
-            runBlockingTest {
+            runTest {
                 publicKeystoreRootPath.deleteExisting()
                 val keystore = FileSessionPublicKeystore(keystoreRoot)
 
@@ -181,7 +181,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             }
 
         @Test
-        fun `Key should be reported as missing if the file doesn't exist`() = runBlockingTest {
+        fun `Key should be reported as missing if the file doesn't exist`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             assertThrows<MissingKeyException> { keystore.retrieve(peerPrivateAddress) }
@@ -189,7 +189,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
 
         @Test
         @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-readable and non-existing
-        fun `Exception should be thrown if file isn't readable`() = runBlockingTest {
+        fun `Exception should be thrown if file isn't readable`() = runTest {
             keyDataFilePath.toFile().createNewFile()
             keyDataFilePath.toFile().setReadable(false)
             val keystore = FileSessionPublicKeystore(keystoreRoot)
@@ -203,7 +203,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Exception should be thrown if file is not BSON-serialized`() = runBlockingTest {
+        fun `Exception should be thrown if file is not BSON-serialized`() = runTest {
             saveKeyData("not BSON".toByteArray())
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
@@ -216,7 +216,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Exception should be thrown if key id is missing`() = runBlockingTest {
+        fun `Exception should be thrown if key id is missing`() = runTest {
             saveKeyData {
                 writeBinaryData("key_der", BsonBinary(sessionKeyPair.sessionKey.publicKey.encoded))
                 writeInt32("creation_timestamp", creationTimestamp)
@@ -232,7 +232,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Exception should be thrown if public key is missing`() = runBlockingTest {
+        fun `Exception should be thrown if public key is missing`() = runTest {
             saveKeyData {
                 writeBinaryData("key_id", BsonBinary(sessionKeyPair.sessionKey.keyId))
                 writeInt32("creation_timestamp", creationTimestamp)
@@ -248,7 +248,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Exception should be thrown if creation timestamp is missing`() = runBlockingTest {
+        fun `Exception should be thrown if creation timestamp is missing`() = runTest {
             saveKeyData {
                 writeBinaryData("key_id", BsonBinary(sessionKeyPair.sessionKey.keyId))
                 writeBinaryData("key_der", BsonBinary(sessionKeyPair.sessionKey.publicKey.encoded))
@@ -264,7 +264,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Data should be returned if file exists and is valid`() = runBlockingTest {
+        fun `Data should be returned if file exists and is valid`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
             keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
 
@@ -296,7 +296,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Deletion should be skipped if the root directory doesn't exist`() = runBlockingTest {
+        fun `Deletion should be skipped if the root directory doesn't exist`() = runTest {
             publicKeystoreRootPath.deleteExisting()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
@@ -304,14 +304,14 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Deletion should be skipped if the file doesn't exist`() = runBlockingTest {
+        fun `Deletion should be skipped if the file doesn't exist`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             keystore.delete(peerPrivateAddress)
         }
 
         @Test
-        fun `File should be deleted if it exists`() = runBlockingTest {
+        fun `File should be deleted if it exists`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
             keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
 
