@@ -10,7 +10,7 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
 
-    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
+    id("org.jlleitschuh.gradle.ktlint") version "10.3.0"
 
     jacoco
 
@@ -30,9 +30,9 @@ dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
     api("tech.relaycorp:awala:[1.65.0,2.0.0)")
-    testImplementation("tech.relaycorp:awala-testing:1.3.3")
+    testImplementation("tech.relaycorp:awala-testing:1.5.2")
 
-    implementation("org.mongodb:bson:4.4.0")
+    implementation("org.mongodb:bson:4.6.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
