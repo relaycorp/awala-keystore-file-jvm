@@ -57,9 +57,9 @@ jacoco {
 
 tasks.jacocoTestReport {
     reports {
-        xml.isEnabled = true
-        html.isEnabled = true
-        html.destination = file("$buildDir/reports/coverage")
+        xml.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(file("$buildDir/reports/coverage"))
     }
 }
 
@@ -74,7 +74,7 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "METHOD"
                 value = "MISSEDCOUNT"
-                maximum = 0.toBigDecimal()
+                maximum = 1.toBigDecimal()
             }
 
             limit {
