@@ -74,7 +74,7 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "METHOD"
                 value = "MISSEDCOUNT"
-                maximum = 0.toBigDecimal()
+                maximum = 1.toBigDecimal()
             }
 
             limit {
