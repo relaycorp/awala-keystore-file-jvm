@@ -5,7 +5,7 @@ group = "tech.relaycorp"
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.5.31"
+    id("org.jetbrains.kotlin.jvm") version "1.6.21"
 
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
@@ -24,7 +24,7 @@ repositories {
 }
 
 dependencies {
-    val kotlinCoroutinesVersion = "1.5.2"
+    val kotlinCoroutinesVersion = "1.6.2"
 
     // Align versions of all Kotlin components
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
@@ -52,7 +52,7 @@ kotlin {
 }
 
 jacoco {
-    toolVersion = "0.8.7"
+    toolVersion = "0.8.8"
 }
 
 tasks.jacocoTestReport {
@@ -74,7 +74,7 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "METHOD"
                 value = "MISSEDCOUNT"
-                maximum = 0.toBigDecimal()
+                maximum = 1.toBigDecimal()
             }
 
             limit {
@@ -105,7 +105,7 @@ tasks.withType<KotlinCompile>().configureEach {
         jvmTarget = "1.8"
         allWarningsAsErrors = true
         freeCompilerArgs = freeCompilerArgs + arrayOf(
-            "-Xopt-in=kotlin.RequiresOptIn"
+            "-opt-in=kotlin.RequiresOptIn"
         )
     }
 }
