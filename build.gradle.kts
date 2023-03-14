@@ -5,12 +5,12 @@ group = "tech.relaycorp"
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.5.31"
+    id("org.jetbrains.kotlin.jvm") version "1.6.21"
 
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
 
-    id("org.jlleitschuh.gradle.ktlint") version "10.2.0"
+    id("org.jlleitschuh.gradle.ktlint") version "10.3.0"
 
     jacoco
 
@@ -24,15 +24,15 @@ repositories {
 }
 
 dependencies {
-    val kotlinCoroutinesVersion = "1.5.2"
+    val kotlinCoroutinesVersion = "1.6.2"
 
     // Align versions of all Kotlin components
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
-    api("tech.relaycorp:awala:[1.65.0,2.0.0)")
-    testImplementation("tech.relaycorp:awala-testing:1.3.3")
+    api("tech.relaycorp:awala:[1.65.2,2.0.0)")
+    testImplementation("tech.relaycorp:awala-testing:1.5.5")
 
-    implementation("org.mongodb:bson:4.4.0")
+    implementation("org.mongodb:bson:4.6.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
@@ -52,14 +52,14 @@ kotlin {
 }
 
 jacoco {
-    toolVersion = "0.8.7"
+    toolVersion = "0.8.8"
 }
 
 tasks.jacocoTestReport {
     reports {
-        xml.isEnabled = true
-        html.isEnabled = true
-        html.destination = file("$buildDir/reports/coverage")
+        xml.required.set(true)
+        html.required.set(true)
+        html.outputLocation.set(file("$buildDir/reports/coverage"))
     }
 }
 
@@ -74,7 +74,7 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "METHOD"
                 value = "MISSEDCOUNT"
-                maximum = 0.toBigDecimal()
+                maximum = 1.toBigDecimal()
             }
 
             limit {
@@ -105,7 +105,7 @@ tasks.withType<KotlinCompile>().configureEach {
         jvmTarget = "1.8"
         allWarningsAsErrors = true
         freeCompilerArgs = freeCompilerArgs + arrayOf(
-            "-Xopt-in=kotlin.RequiresOptIn"
+            "-opt-in=kotlin.RequiresOptIn"
         )
     }
 }

@@ -8,7 +8,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
+import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -56,7 +56,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     ) {
 
         @Test
-        override fun `Private key should be stored`() = runBlockingTest {
+        override fun `Private key should be stored`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             keystore.saveIdentityKey(privateKey)
@@ -80,7 +80,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     ) {
 
         @Test
-        fun `Exception should be thrown if private key does not exist`() = runBlockingTest {
+        fun `Exception should be thrown if private key does not exist`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             val exception = assertThrows<MissingKeyException> {
@@ -91,7 +91,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        override fun `Private key should be returned if file exists`() = runBlockingTest {
+        override fun `Private key should be returned if file exists`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
 
@@ -104,7 +104,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     @Nested
     inner class AllIdentityKeys {
         @Test
-        fun `Nothing should be returned if store is empty`() = runBlockingTest {
+        fun `Nothing should be returned if store is empty`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             val allIdentityKeys = keystore.retrieveAllIdentityKeys()
@@ -113,7 +113,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `All identity key pairs should be returned`() = runBlockingTest {
+        fun `All identity key pairs should be returned`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
             val extraPrivateKey = KeyPairSet.PDA_GRANTEE.private
@@ -127,7 +127,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Irrelevant subdirectories should be ignored`() = runBlockingTest {
+        fun `Irrelevant subdirectories should be ignored`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
             privateKeystoreRootFile.resolve("invalid").toPath().createDirectories()
@@ -139,7 +139,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Irrelevant files should be ignored`() = runBlockingTest {
+        fun `Irrelevant files should be ignored`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
             privateKeystoreRootFile.resolve("invalid").createNewFile()
@@ -165,7 +165,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     ) {
 
         @Test
-        override fun `Private key should be stored`() = runBlockingTest {
+        override fun `Private key should be stored`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             keystore.saveSessionKey(
@@ -181,7 +181,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Existing file should be updated if key already existed`() = runBlockingTest {
+        fun `Existing file should be updated if key already existed`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -204,7 +204,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `File should be stored under peer subdirectory if key is bound`() = runBlockingTest {
+        fun `File should be stored under peer subdirectory if key is bound`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             keystore.saveSessionKey(
@@ -222,7 +222,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
 
         @Test
         fun `File should not be stored under a peer subdirectory if key is unbound`() =
-            runBlockingTest {
+            runTest {
                 val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
                 keystore.saveSessionKey(
@@ -252,7 +252,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             )
         }
     ) {
-        override fun `Private key should be returned if file exists`() = runBlockingTest {
+        override fun `Private key should be returned if file exists`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -270,7 +270,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Bound keys should be retrieved`() = runBlockingTest {
+        fun `Bound keys should be retrieved`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -289,7 +289,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Unbound keys should be retrieved`() = runBlockingTest {
+        fun `Unbound keys should be retrieved`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -310,7 +310,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     @Nested
     inner class DeleteKeys {
         @Test
-        fun `Node directory should be deleted even if it contains keys`() = runBlockingTest {
+        fun `Node directory should be deleted even if it contains keys`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
             keystore.saveSessionKey(
@@ -325,7 +325,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Other node directories shouldn't be deleted`() = runBlockingTest {
+        fun `Other node directories shouldn't be deleted`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
             val node2Directory = nodeDirectoryPath.resolveSibling("node2")
@@ -340,7 +340,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Nothing should happen if the node directory doesn't exist`() = runBlockingTest {
+        fun `Nothing should happen if the node directory doesn't exist`() = runTest {
             assertFalse(nodeDirectoryPath.exists())
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
@@ -351,7 +351,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
 
         @Test
         @DisabledOnOs(OS.WINDOWS)
-        fun `Exception should be thrown if node directory couldn't be deleted`() = runBlockingTest {
+        fun `Exception should be thrown if node directory couldn't be deleted`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
             nodeDirectoryPath.toFile().setWritable(false)
@@ -369,7 +369,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     @Nested
     inner class DeleteSessionKeysForPeer {
         @Test
-        fun `Keys linked to peer should be deleted across all nodes`() = runBlockingTest {
+        fun `Keys linked to peer should be deleted across all nodes`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -398,7 +398,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Keys linked to other peers should not be deleted`() = runBlockingTest {
+        fun `Keys linked to other peers should not be deleted`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             val peer2PrivateAddress = "Peer2Address"
             val peer2SessionKeypair = SessionKeyPair.generate()
@@ -419,7 +419,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Unbound keys should not be deleted`() = runBlockingTest {
+        fun `Unbound keys should not be deleted`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -451,7 +451,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         }
 
         @Test
-        fun `Nothing should happen if the root directory doesn't exist`() = runBlockingTest {
+        fun `Nothing should happen if the root directory doesn't exist`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             keystore.deleteSessionKeysForPeer(peerPrivateAddress)
@@ -459,7 +459,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
 
         @Test
         @DisabledOnOs(OS.WINDOWS)
-        fun `Exception should be thrown if a directory couldn't be deleted`() = runBlockingTest {
+        fun `Exception should be thrown if a directory couldn't be deleted`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
