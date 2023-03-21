@@ -17,13 +17,13 @@ public class FileSessionPublicKeystore(
     @Suppress("MemberVisibilityCanBePrivate")
     public val rootDirectory: File = keystoreRoot.directory.resolve("public")
 
-    override suspend fun saveKeyData(keyData: SessionPublicKeyData, peerPrivateAddress: String) {
+    override suspend fun saveKeyData(keyData: SessionPublicKeyData, peerId: String) {
         val wasDirectoryCreated = rootDirectory.mkdirs()
         if (!wasDirectoryCreated && !rootDirectory.exists()) {
             throw FileKeystoreException("Failed to create root directory for public keys")
         }
 
-        val keyDataFile = getKeyDataFile(peerPrivateAddress)
+        val keyDataFile = getKeyDataFile(peerId)
         val bsonSerialization = BasicOutputBuffer().use { buffer ->
             BsonBinaryWriter(buffer).use {
                 it.writeStartDocument()
@@ -41,8 +41,8 @@ public class FileSessionPublicKeystore(
         }
     }
 
-    override suspend fun retrieveKeyData(peerPrivateAddress: String): SessionPublicKeyData? {
-        val keyDataFile = getKeyDataFile(peerPrivateAddress)
+    override suspend fun retrieveKeyData(peerId: String): SessionPublicKeyData? {
+        val keyDataFile = getKeyDataFile(peerId)
         val serialization = try {
             keyDataFile.readBytes()
         } catch (exc: IOException) {
@@ -66,11 +66,11 @@ public class FileSessionPublicKeystore(
         return data
     }
 
-    override suspend fun delete(peerPrivateAddress: String) {
-        val keyDataFile = getKeyDataFile(peerPrivateAddress)
+    override suspend fun delete(peerId: String) {
+        val keyDataFile = getKeyDataFile(peerId)
         keyDataFile.delete()
     }
 
-    private fun getKeyDataFile(peerPrivateAddress: String) =
-        rootDirectory.resolve(peerPrivateAddress)
+    private fun getKeyDataFile(peerId: String) =
+        rootDirectory.resolve(peerId)
 }

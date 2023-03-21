@@ -18,23 +18,23 @@ import tech.relaycorp.relaynet.SessionKeyPair
 import tech.relaycorp.relaynet.keystores.MissingKeyException
 import tech.relaycorp.relaynet.testing.pki.KeyPairSet
 import tech.relaycorp.relaynet.testing.pki.PDACertPath
-import tech.relaycorp.relaynet.wrappers.privateAddress
+import tech.relaycorp.relaynet.wrappers.nodeId
 
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 class FilePrivateKeyStoreTest : KeystoreTestCase() {
     private val privateKey = KeyPairSet.PRIVATE_ENDPOINT.private
-    private val privateAddress = privateKey.privateAddress
+    private val privateId = privateKey.nodeId
     private val sessionKeypair = SessionKeyPair.generate()
 
-    private val peerPrivateAddress = PDACertPath.PDA.subjectPrivateAddress
+    private val peerId = PDACertPath.PDA.subjectId
 
     private val privateKeystoreRootFile = keystoreRoot.directory.resolve("private")
-    private val nodeDirectoryPath = privateKeystoreRootFile.resolve(privateAddress).toPath()
+    private val nodeDirectoryPath = privateKeystoreRootFile.resolve(privateId).toPath()
 
     private val identityKeyFilePath = nodeDirectoryPath.resolve("identity")
     private val boundSessionKeyFilePath =
-        nodeDirectoryPath.resolve("session").resolve(peerPrivateAddress).resolve(
+        nodeDirectoryPath.resolve("session").resolve(peerId).resolve(
             byteArrayToHex(sessionKeypair.sessionKey.keyId)
         )
     private val unboundSessionKeyFilePath = nodeDirectoryPath.resolve("session").resolve(
@@ -76,7 +76,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     inner class RetrieveIdentity : PrivateKeyStoreRetrievalTestCase(
         keystoreRoot,
         identityKeyFilePath,
-        { retrieveIdentityKey(privateAddress) }
+        { retrieveIdentityKey(privateId) }
     ) {
 
         @Test
@@ -84,10 +84,10 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
             val exception = assertThrows<MissingKeyException> {
-                keystore.retrieveIdentityKey(privateAddress)
+                keystore.retrieveIdentityKey(privateId)
             }
 
-            assertEquals("There is no identity key for $privateAddress", exception.message)
+            assertEquals("There is no identity key for $privateId", exception.message)
         }
 
         @Test
@@ -95,7 +95,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveIdentityKey(privateKey)
 
-            val key = keystore.retrieveIdentityKey(privateAddress)
+            val key = keystore.retrieveIdentityKey(privateId)
 
             assertEquals(privateKey, key)
         }
@@ -159,7 +159,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress
+                privateId
             )
         }
     ) {
@@ -171,7 +171,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress
+                privateId
             )
 
             assertEquals(
@@ -186,7 +186,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress
+                privateId
             )
 
             // Replace the private key
@@ -194,7 +194,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 differentSessionKeyPair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress
+                privateId
             )
 
             assertEquals(
@@ -210,8 +210,8 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress,
+                privateId,
+                peerId,
             )
 
             assertEquals(
@@ -228,7 +228,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
                 keystore.saveSessionKey(
                     sessionKeypair.privateKey,
                     sessionKeypair.sessionKey.keyId,
-                    privateAddress,
+                    privateId,
                 )
 
                 assertEquals(
@@ -247,8 +247,8 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         {
             retrieveSessionKey(
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
+                privateId,
+                peerId
             )
         }
     ) {
@@ -257,13 +257,13 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress
+                privateId
             )
 
             val sessionPrivateKey = keystore.retrieveSessionKey(
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
+                privateId,
+                peerId
             )
 
             assertEquals(sessionKeypair.privateKey, sessionPrivateKey)
@@ -275,14 +275,14 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
+                privateId,
+                peerId
             )
 
             val privateKey = keystore.retrieveSessionKey(
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
+                privateId,
+                peerId
             )
 
             assertEquals(sessionKeypair.privateKey.encoded.asList(), privateKey.encoded.asList())
@@ -294,13 +294,13 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
+                privateId,
             )
 
             val privateKey = keystore.retrieveSessionKey(
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress
+                privateId,
+                peerId
             )
 
             assertEquals(sessionKeypair.privateKey.encoded.asList(), privateKey.encoded.asList())
@@ -316,10 +316,10 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
+                privateId,
             )
 
-            keystore.deleteKeys(privateAddress)
+            keystore.deleteKeys(privateId)
 
             assertFalse(nodeDirectoryPath.exists())
         }
@@ -333,7 +333,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             val node3Directory = nodeDirectoryPath.resolveSibling("node3")
             node3Directory.createDirectories()
 
-            keystore.deleteKeys(privateAddress)
+            keystore.deleteKeys(privateId)
 
             assertTrue(node2Directory.exists())
             assertTrue(node3Directory.exists())
@@ -344,7 +344,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             assertFalse(nodeDirectoryPath.exists())
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-            keystore.deleteKeys(privateAddress)
+            keystore.deleteKeys(privateId)
 
             assertFalse(nodeDirectoryPath.exists())
         }
@@ -357,10 +357,10 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             nodeDirectoryPath.toFile().setWritable(false)
 
             val exception =
-                assertThrows<FileKeystoreException> { keystore.deleteKeys(privateAddress) }
+                assertThrows<FileKeystoreException> { keystore.deleteKeys(privateId) }
 
             assertEquals(
-                "Failed to delete node directory for $privateAddress",
+                "Failed to delete node directory for $privateId",
                 exception.message
             )
         }
@@ -374,24 +374,24 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress,
+                privateId,
+                peerId,
             )
             val node2PrivateAddress = "AnotherPrivateAddress"
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
                 node2PrivateAddress,
-                peerPrivateAddress,
+                peerId,
             )
             val boundSessionKey2FilePath = privateKeystoreRootFile.resolve(node2PrivateAddress)
                 .resolve("session")
-                .resolve(peerPrivateAddress)
+                .resolve(peerId)
                 .resolve(byteArrayToHex(sessionKeypair.sessionKey.keyId))
                 .toPath()
             assertTrue(boundSessionKey2FilePath.exists())
 
-            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+            keystore.deleteSessionKeysForPeer(peerId)
 
             assertFalse(boundSessionKeyFilePath.parent.exists())
             assertFalse(boundSessionKey2FilePath.parent.exists())
@@ -405,15 +405,15 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 peer2SessionKeypair.privateKey,
                 peer2SessionKeypair.sessionKey.keyId,
-                privateAddress,
+                privateId,
                 peer2PrivateAddress,
             )
 
-            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+            keystore.deleteSessionKeysForPeer(peerId)
 
             keystore.retrieveSessionKey(
                 peer2SessionKeypair.sessionKey.keyId,
-                privateAddress,
+                privateId,
                 peer2PrivateAddress,
             )
         }
@@ -424,29 +424,29 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress,
+                privateId,
+                peerId,
             )
             val unboundSessionKeypair = SessionKeyPair.generate()
             keystore.saveSessionKey(
                 unboundSessionKeypair.privateKey,
                 unboundSessionKeypair.sessionKey.keyId,
-                privateAddress,
+                privateId,
             )
 
-            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+            keystore.deleteSessionKeysForPeer(peerId)
 
             assertThrows<MissingKeyException> {
                 keystore.retrieveSessionKey(
                     sessionKeypair.sessionKey.keyId,
-                    privateAddress,
-                    peerPrivateAddress,
+                    privateId,
+                    peerId,
                 )
             }
             keystore.retrieveSessionKey(
                 unboundSessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress,
+                privateId,
+                peerId,
             )
         }
 
@@ -454,7 +454,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         fun `Nothing should happen if the root directory doesn't exist`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-            keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+            keystore.deleteSessionKeysForPeer(peerId)
         }
 
         @Test
@@ -464,17 +464,17 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
                 sessionKeypair.sessionKey.keyId,
-                privateAddress,
-                peerPrivateAddress,
+                privateId,
+                peerId,
             )
             boundSessionKeyFilePath.parent.toFile().setWritable(false)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.deleteSessionKeysForPeer(peerPrivateAddress)
+                keystore.deleteSessionKeysForPeer(peerId)
             }
 
             assertEquals(
-                "Failed to delete all keys for peer $peerPrivateAddress",
+                "Failed to delete all keys for peer $peerId",
                 exception.message
             )
         }
