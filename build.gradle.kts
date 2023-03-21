@@ -5,7 +5,7 @@ group = "tech.relaycorp"
 
 plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.6.21"
+    id("org.jetbrains.kotlin.jvm") version "1.8.10"
 
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
@@ -29,8 +29,8 @@ dependencies {
     // Align versions of all Kotlin components
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
-    api("tech.relaycorp:awala:[1.65.2,2.0.0)")
-    testImplementation("tech.relaycorp:awala-testing:1.5.5")
+    api("tech.relaycorp:awala:[1.66.4,2.0.0)")
+    testImplementation("tech.relaycorp:awala-testing:1.5.10")
 
     implementation("org.mongodb:bson:4.6.1")
 

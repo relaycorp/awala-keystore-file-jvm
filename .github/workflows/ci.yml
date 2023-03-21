@@ -10,6 +10,8 @@ jobs:
   release:
     needs: ci
     uses: relaycorp/shared-workflows/.github/workflows/jvm-lib-release.yml@main
+    with:
+      dokka_docs: false
     secrets:
       maven_username: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
       maven_password: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}

@@ -30,12 +30,12 @@ import tech.relaycorp.relaynet.testing.pki.PDACertPath
 @ExperimentalCoroutinesApi
 @Suppress("BlockingMethodInNonBlockingContext")
 class FileSessionPublicKeystoreTest : KeystoreTestCase() {
-    private val peerPrivateAddress = PDACertPath.PDA.subjectPrivateAddress
+    private val peerId = PDACertPath.PDA.subjectId
 
     private val sessionKeyPair = SessionKeyPair.generate()
 
     private val publicKeystoreRootPath = keystoreRoot.directory.resolve("public").toPath()
-    private val keyDataFilePath = publicKeystoreRootPath.resolve(peerPrivateAddress)
+    private val keyDataFilePath = publicKeystoreRootPath.resolve(peerId)
 
     @Nested
     inner class Save {
@@ -45,7 +45,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             publicKeystoreRootPath.createDirectory()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+            keystore.save(sessionKeyPair.sessionKey, peerId)
 
             readKeyData()
         }
@@ -55,7 +55,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             assertFalse(publicKeystoreRootPath.exists())
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+            keystore.save(sessionKeyPair.sessionKey, peerId)
 
             readKeyData()
         }
@@ -65,7 +65,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             keystoreRoot.directory.delete()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+            keystore.save(sessionKeyPair.sessionKey, peerId)
 
             readKeyData()
         }
@@ -78,7 +78,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+                keystore.save(sessionKeyPair.sessionKey, peerId)
             }
 
             assertEquals(
@@ -93,7 +93,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             val creationTime = ZonedDateTime.now()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress, creationTime)
+            keystore.save(sessionKeyPair.sessionKey, peerId, creationTime)
 
             val savedKeyData = readKeyData()
             assertEquals(
@@ -114,10 +114,10 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         fun `Existing file should be updated if there is a prior key for peer`() = runTest {
             val now = ZonedDateTime.now()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
-            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress, now.minusSeconds(1))
+            keystore.save(sessionKeyPair.sessionKey, peerId, now.minusSeconds(1))
             val (newSessionKey) = SessionKeyPair.generate()
 
-            keystore.save(newSessionKey, peerPrivateAddress, now)
+            keystore.save(newSessionKey, peerId, now)
 
             val savedKeyData = readKeyData()
             assertEquals(
@@ -140,13 +140,13 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             // Make the read operation work but the subsequent write operation fail
             keystore.save(
                 sessionKeyPair.sessionKey,
-                peerPrivateAddress,
+                peerId,
                 ZonedDateTime.now().minusDays(1)
             )
             keyDataFilePath.toFile().setWritable(false)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+                keystore.save(sessionKeyPair.sessionKey, peerId)
             }
 
             assertEquals(
@@ -177,14 +177,14 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
                 publicKeystoreRootPath.deleteExisting()
                 val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-                assertThrows<MissingKeyException> { keystore.retrieve(peerPrivateAddress) }
+                assertThrows<MissingKeyException> { keystore.retrieve(peerId) }
             }
 
         @Test
         fun `Key should be reported as missing if the file doesn't exist`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-            assertThrows<MissingKeyException> { keystore.retrieve(peerPrivateAddress) }
+            assertThrows<MissingKeyException> { keystore.retrieve(peerId) }
         }
 
         @Test
@@ -195,7 +195,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieve(peerPrivateAddress)
+                keystore.retrieve(peerId)
             }
 
             assertEquals("Failed to read key file", exception.message)
@@ -208,7 +208,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieve(peerPrivateAddress)
+                keystore.retrieve(peerId)
             }
 
             assertEquals("Key file is malformed", exception.message)
@@ -224,7 +224,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieve(peerPrivateAddress)
+                keystore.retrieve(peerId)
             }
 
             assertEquals("Key file is malformed", exception.message)
@@ -240,7 +240,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieve(peerPrivateAddress)
+                keystore.retrieve(peerId)
             }
 
             assertEquals("Key file is malformed", exception.message)
@@ -256,7 +256,7 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.retrieve(peerPrivateAddress)
+                keystore.retrieve(peerId)
             }
 
             assertEquals("Key file is malformed", exception.message)
@@ -266,9 +266,9 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
         @Test
         fun `Data should be returned if file exists and is valid`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
-            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+            keystore.save(sessionKeyPair.sessionKey, peerId)
 
-            val key = keystore.retrieve(peerPrivateAddress)
+            val key = keystore.retrieve(peerId)
 
             assertEquals(sessionKeyPair.sessionKey, key)
         }
@@ -300,24 +300,24 @@ class FileSessionPublicKeystoreTest : KeystoreTestCase() {
             publicKeystoreRootPath.deleteExisting()
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-            keystore.delete(peerPrivateAddress)
+            keystore.delete(peerId)
         }
 
         @Test
         fun `Deletion should be skipped if the file doesn't exist`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
 
-            keystore.delete(peerPrivateAddress)
+            keystore.delete(peerId)
         }
 
         @Test
         fun `File should be deleted if it exists`() = runTest {
             val keystore = FileSessionPublicKeystore(keystoreRoot)
-            keystore.save(sessionKeyPair.sessionKey, peerPrivateAddress)
+            keystore.save(sessionKeyPair.sessionKey, peerId)
 
-            keystore.delete(peerPrivateAddress)
+            keystore.delete(peerId)
 
-            assertThrows<MissingKeyException> { keystore.retrieve(peerPrivateAddress) }
+            assertThrows<MissingKeyException> { keystore.retrieve(peerId) }
         }
     }
 }

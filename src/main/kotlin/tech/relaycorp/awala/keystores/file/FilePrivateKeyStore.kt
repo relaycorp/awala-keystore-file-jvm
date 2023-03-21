@@ -13,15 +13,15 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun saveIdentityKeyData(
-        privateAddress: String,
+        nodeId: String,
         keyData: PrivateKeyData
     ) {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve("identity")
+        val keyFile = getNodeSubdirectory(nodeId).resolve("identity")
         saveKeyFile(keyFile, keyData.privateKeyDer)
     }
 
-    override suspend fun retrieveIdentityKeyData(privateAddress: String): PrivateKeyData? {
-        val keyFile = getNodeSubdirectory(privateAddress).resolve("identity")
+    override suspend fun retrieveIdentityKeyData(nodeId: String): PrivateKeyData? {
+        val keyFile = getNodeSubdirectory(nodeId).resolve("identity")
         return retrieveKeyData(keyFile)?.let { PrivateKeyData(it) }
     }
 
@@ -34,20 +34,20 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     override suspend fun saveSessionKeySerialized(
         keyId: String,
         keySerialized: ByteArray,
-        privateAddress: String,
-        peerPrivateAddress: String?,
+        nodeId: String,
+        peerId: String?,
     ) {
-        val keyFile = resolveSessionKeyFile(privateAddress, keyId, peerPrivateAddress)
+        val keyFile = resolveSessionKeyFile(nodeId, keyId, peerId)
         saveKeyFile(keyFile, keySerialized)
     }
 
     override suspend fun retrieveSessionKeySerialized(
         keyId: String,
-        privateAddress: String,
-        peerPrivateAddress: String,
+        nodeId: String,
+        peerId: String,
     ): ByteArray? {
-        val boundKeyPath = resolveSessionKeyFile(privateAddress, keyId, peerPrivateAddress)
-        val unboundKeyPath = resolveSessionKeyFile(privateAddress, keyId, null)
+        val boundKeyPath = resolveSessionKeyFile(nodeId, keyId, peerId)
+        val unboundKeyPath = resolveSessionKeyFile(nodeId, keyId, null)
         return retrieveKeyData(boundKeyPath) ?: retrieveKeyData(unboundKeyPath)
     }
 
@@ -80,20 +80,20 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     }
 
     private fun resolveSessionKeyFile(
-        privateAddress: String,
+        nodeId: String,
         keyId: String,
-        peerPrivateAddress: String?
+        peerId: String?
     ): File {
-        val nodeSubdirectory = getNodeSubdirectory(privateAddress).resolve("session")
-        val parentDirectory = if (peerPrivateAddress != null)
-            nodeSubdirectory.resolve(peerPrivateAddress)
+        val nodeSubdirectory = getNodeSubdirectory(nodeId).resolve("session")
+        val parentDirectory = if (peerId != null)
+            nodeSubdirectory.resolve(peerId)
         else
             nodeSubdirectory
         return parentDirectory.resolve(keyId)
     }
 
-    private fun getNodeSubdirectory(privateAddress: String) =
-        rootDirectory.resolve(privateAddress)
+    private fun getNodeSubdirectory(nodeId: String) =
+        rootDirectory.resolve(nodeId)
 
     private fun getNodeDirectories() = rootDirectory.listFiles()?.filter(File::isDirectory)
 
@@ -102,28 +102,28 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     protected abstract fun makeEncryptedInputStream(file: File): InputStream
 
     /**
-     * Delete all the private keys associated with [privateAddress].
+     * Delete all the private keys associated with [nodeId].
      */
     @Throws(FileKeystoreException::class)
-    override suspend fun deleteKeys(privateAddress: String) {
-        val deletionSucceeded = getNodeSubdirectory(privateAddress).deleteRecursively()
+    override suspend fun deleteKeys(nodeId: String) {
+        val deletionSucceeded = getNodeSubdirectory(nodeId).deleteRecursively()
         if (!deletionSucceeded) {
-            throw FileKeystoreException("Failed to delete node directory for $privateAddress")
+            throw FileKeystoreException("Failed to delete node directory for $nodeId")
         }
     }
 
     /**
-     * Delete all the private keys associated with [peerPrivateAddress].
+     * Delete all the private keys associated with [peerId].
      */
     @Throws(FileKeystoreException::class)
-    override suspend fun deleteSessionKeysForPeer(peerPrivateAddress: String) {
+    override suspend fun deleteSessionKeysForPeer(peerId: String) {
         val deletionSucceeded = getNodeDirectories()
-            ?.map { it.resolve("session").resolve(peerPrivateAddress) }
+            ?.map { it.resolve("session").resolve(peerId) }
             ?.filter(File::exists)
             ?.map(File::deleteRecursively)
             ?.all { it }
         if (deletionSucceeded == false) {
-            throw FileKeystoreException("Failed to delete all keys for peer $peerPrivateAddress")
+            throw FileKeystoreException("Failed to delete all keys for peer $peerId")
         }
     }
 }

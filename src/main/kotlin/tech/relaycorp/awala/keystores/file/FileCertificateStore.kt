@@ -16,25 +16,25 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
     public val rootDirectory: File = keystoreRoot.directory.resolve("certificate")
 
     override suspend fun saveData(
-        subjectPrivateAddress: String,
+        subjectId: String,
         leafCertificateExpiryDate: ZonedDateTime,
         certificationPathData: ByteArray,
-        issuerPrivateAddress: String
+        issuerId: String
     ) {
         val expirationTimestamp = leafCertificateExpiryDate.toTimestamp()
         val dataDigest = certificationPathData.toDigest()
-        val certFile = getNodeSubdirectory(subjectPrivateAddress, issuerPrivateAddress).resolve(
+        val certFile = getNodeSubdirectory(subjectId, issuerId).resolve(
             "$expirationTimestamp-$dataDigest"
         )
         saveCertificationFile(certFile, certificationPathData)
     }
 
     override suspend fun retrieveData(
-        subjectPrivateAddress: String,
-        issuerPrivateAddress: String
+        subjectId: String,
+        issuerId: String
     ): List<ByteArray> {
         val certificateFiles =
-            getNodeSubdirectory(subjectPrivateAddress, issuerPrivateAddress).listFiles()
+            getNodeSubdirectory(subjectId, issuerId).listFiles()
                 ?: return emptyList()
 
         return certificateFiles
@@ -57,12 +57,12 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
     }
 
     @Throws(FileKeystoreException::class)
-    override fun delete(subjectPrivateAddress: String, issuerPrivateAddress: String) {
+    override fun delete(subjectId: String, issuerId: String) {
         val deletionSucceeded =
-            getNodeSubdirectory(subjectPrivateAddress, issuerPrivateAddress).deleteRecursively()
+            getNodeSubdirectory(subjectId, issuerId).deleteRecursively()
         if (!deletionSucceeded) {
             throw FileKeystoreException(
-                "Failed to delete node directory for $subjectPrivateAddress"
+                "Failed to delete node directory for $subjectId"
             )
         }
     }
@@ -107,10 +107,10 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
             ?: throw FileKeystoreException("Invalid certificate file name: $name")
 
     private fun getNodeSubdirectory(
-        subjectPrivateAddress: String,
-        issuerPrivateAddress: String
+        subjectId: String,
+        issuerId: String
     ) =
-        rootDirectory.resolve(issuerPrivateAddress).resolve(subjectPrivateAddress)
+        rootDirectory.resolve(issuerId).resolve(subjectId)
 }
 
 internal fun ByteArray.toDigest() =
