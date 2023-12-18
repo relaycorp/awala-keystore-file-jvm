@@ -116,14 +116,15 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
      * Delete all the private keys associated with [peerId].
      */
     @Throws(FileKeystoreException::class)
-    override suspend fun deleteSessionKeysForPeer(peerId: String) {
-        val deletionSucceeded = getNodeDirectories()
-            ?.map { it.resolve("session").resolve(peerId) }
-            ?.filter(File::exists)
-            ?.map(File::deleteRecursively)
-            ?.all { it }
-        if (deletionSucceeded == false) {
-            throw FileKeystoreException("Failed to delete all keys for peer $peerId")
+    override suspend fun deleteBoundSessionKeys(nodeId: String, peerId: String) {
+        val deletionSucceeded = getNodeSubdirectory(nodeId)
+            .resolve("session")
+            .resolve(peerId)
+            .deleteRecursively()
+        if (!deletionSucceeded) {
+            throw FileKeystoreException(
+                "Failed to delete session keys for node $nodeId and peer $peerId"
+            )
         }
     }
 }
