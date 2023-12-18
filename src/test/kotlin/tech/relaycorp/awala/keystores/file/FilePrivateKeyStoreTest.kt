@@ -367,9 +367,9 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
     }
 
     @Nested
-    inner class DeleteSessionKeysForPeer {
+    inner class DeleteBoundSessionKeys {
         @Test
-        fun `Keys linked to peer should be deleted across all nodes`() = runTest {
+        fun `Keys linked to peer should not be deleted from other nodes`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
             keystore.saveSessionKey(
                 sessionKeypair.privateKey,
@@ -391,10 +391,10 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
                 .toPath()
             assertTrue(boundSessionKey2FilePath.exists())
 
-            keystore.deleteSessionKeysForPeer(peerId)
+            keystore.deleteBoundSessionKeys(privateId, peerId)
 
             assertFalse(boundSessionKeyFilePath.parent.exists())
-            assertFalse(boundSessionKey2FilePath.parent.exists())
+            assertTrue(boundSessionKey2FilePath.parent.exists())
         }
 
         @Test
@@ -409,7 +409,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
                 peer2PrivateAddress,
             )
 
-            keystore.deleteSessionKeysForPeer(peerId)
+            keystore.deleteBoundSessionKeys(privateId, peerId)
 
             keystore.retrieveSessionKey(
                 peer2SessionKeypair.sessionKey.keyId,
@@ -434,7 +434,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
                 privateId,
             )
 
-            keystore.deleteSessionKeysForPeer(peerId)
+            keystore.deleteBoundSessionKeys(privateId, peerId)
 
             assertThrows<MissingKeyException> {
                 keystore.retrieveSessionKey(
@@ -454,7 +454,7 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
         fun `Nothing should happen if the root directory doesn't exist`() = runTest {
             val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-            keystore.deleteSessionKeysForPeer(peerId)
+            keystore.deleteBoundSessionKeys(privateId, peerId)
         }
 
         @Test
@@ -470,11 +470,11 @@ class FilePrivateKeyStoreTest : KeystoreTestCase() {
             boundSessionKeyFilePath.parent.toFile().setWritable(false)
 
             val exception = assertThrows<FileKeystoreException> {
-                keystore.deleteSessionKeysForPeer(peerId)
+                keystore.deleteBoundSessionKeys(privateId, peerId)
             }
 
             assertEquals(
-                "Failed to delete all keys for peer $peerId",
+                "Failed to delete session keys for node $privateId and peer $peerId",
                 exception.message
             )
         }
