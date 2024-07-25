@@ -10,8 +10,9 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import tech.relaycorp.relaynet.keystores.CertificateStore
 
-public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateStore() {
-
+public class FileCertificateStore(
+    keystoreRoot: FileKeystoreRoot,
+) : CertificateStore() {
     @Suppress("MemberVisibilityCanBePrivate")
     public val rootDirectory: File = keystoreRoot.directory.resolve("certificate")
 
@@ -19,19 +20,20 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
         subjectId: String,
         leafCertificateExpiryDate: ZonedDateTime,
         certificationPathData: ByteArray,
-        issuerId: String
+        issuerId: String,
     ) {
         val expirationTimestamp = leafCertificateExpiryDate.toTimestamp()
         val dataDigest = certificationPathData.toDigest()
-        val certFile = getNodeSubdirectory(subjectId, issuerId).resolve(
-            "$expirationTimestamp-$dataDigest"
-        )
+        val certFile =
+            getNodeSubdirectory(subjectId, issuerId).resolve(
+                "$expirationTimestamp-$dataDigest",
+            )
         saveCertificationFile(certFile, certificationPathData)
     }
 
     override suspend fun retrieveData(
         subjectId: String,
-        issuerId: String
+        issuerId: String,
     ): List<ByteArray> {
         val certificateFiles =
             getNodeSubdirectory(subjectId, issuerId).listFiles()
@@ -57,22 +59,28 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
     }
 
     @Throws(FileKeystoreException::class)
-    override fun delete(subjectId: String, issuerId: String) {
+    override fun delete(
+        subjectId: String,
+        issuerId: String,
+    ) {
         val deletionSucceeded =
             getNodeSubdirectory(subjectId, issuerId).deleteRecursively()
         if (!deletionSucceeded) {
             throw FileKeystoreException(
-                "Failed to delete node directory for $subjectId"
+                "Failed to delete node directory for $subjectId",
             )
         }
     }
 
-    private fun saveCertificationFile(certFile: File, serialization: ByteArray) {
+    private fun saveCertificationFile(
+        certFile: File,
+        serialization: ByteArray,
+    ) {
         val parentDirectory = certFile.parentFile
         val wereDirectoriesCreated = parentDirectory.mkdirs()
         if (!wereDirectoriesCreated && !parentDirectory.exists()) {
             throw FileKeystoreException(
-                "Failed to create address directory for certification files"
+                "Failed to create address directory for certification files",
             )
         }
         try {
@@ -85,22 +93,21 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
         }
     }
 
-    private fun retrieveData(file: File): ByteArray {
-        return try {
+    private fun retrieveData(file: File): ByteArray =
+        try {
             FileInputStream(file).use { it.readBytes() }
         } catch (exc: IOException) {
             throw FileKeystoreException("Failed to read certification file", exc)
         }
-    }
 
-    private fun ZonedDateTime.toTimestamp() =
-        toInstant().toEpochMilli()
+    private fun ZonedDateTime.toTimestamp() = toInstant().toEpochMilli()
 
     private fun Long.toZonedDateTime() =
         ZonedDateTime.ofInstant(Instant.ofEpochMilli(this), ZoneId.of("UTC"))
 
     private fun File.getExpiryDateFromName(): ZonedDateTime =
-        name.split("-")
+        name
+            .split("-")
             .first()
             .toLongOrNull()
             ?.toZonedDateTime()
@@ -108,12 +115,12 @@ public class FileCertificateStore(keystoreRoot: FileKeystoreRoot) : CertificateS
 
     private fun getNodeSubdirectory(
         subjectId: String,
-        issuerId: String
-    ) =
-        rootDirectory.resolve(issuerId).resolve(subjectId)
+        issuerId: String,
+    ) = rootDirectory.resolve(issuerId).resolve(subjectId)
 }
 
 internal fun ByteArray.toDigest() =
-    MessageDigest.getInstance("SHA-256")
+    MessageDigest
+        .getInstance("SHA-256")
         .digest(this)
         .joinToString("") { "%02x".format(it) }

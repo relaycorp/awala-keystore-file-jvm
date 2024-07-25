@@ -21,37 +21,40 @@ import tech.relaycorp.relaynet.keystores.MissingKeyException
 abstract class PrivateKeyStoreRetrievalTestCase(
     private val keystoreRoot: FileKeystoreRoot,
     private val keyFilePath: Path,
-    private val retrieveMethod: suspend FilePrivateKeyStore.() -> Unit
+    private val retrieveMethod: suspend FilePrivateKeyStore.() -> Unit,
 ) {
     @Test
-    fun `Key should be reported as missing if parent directory doesn't exist`() = runTest {
-        assertFalse(keyFilePath.parent.exists())
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `Key should be reported as missing if parent directory doesn't exist`() =
+        runTest {
+            assertFalse(keyFilePath.parent.exists())
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        assertThrows<MissingKeyException> { retrieveMethod(keystore) }
-    }
+            assertThrows<MissingKeyException> { retrieveMethod(keystore) }
+        }
 
     @Test
-    fun `Key should be reported as missing if the file doesn't exist`() = runTest {
-        keyFilePath.parent.createDirectories()
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `Key should be reported as missing if the file doesn't exist`() =
+        runTest {
+            keyFilePath.parent.createDirectories()
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        assertThrows<MissingKeyException> { retrieveMethod(keystore) }
-    }
+            assertThrows<MissingKeyException> { retrieveMethod(keystore) }
+        }
 
     @Test
     @DisabledOnOs(OS.WINDOWS) // Windows can't tell apart between not-readable and non-existing
-    fun `Exception should be thrown if file isn't readable`() = runTest {
-        keyFilePath.parent.createDirectories()
-        keyFilePath.createFile()
-        keyFilePath.toFile().setReadable(false)
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `Exception should be thrown if file isn't readable`() =
+        runTest {
+            keyFilePath.parent.createDirectories()
+            keyFilePath.createFile()
+            keyFilePath.toFile().setReadable(false)
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        val exception = assertThrows<FileKeystoreException> { retrieveMethod(keystore) }
+            val exception = assertThrows<FileKeystoreException> { retrieveMethod(keystore) }
 
-        assertEquals("Failed to read key file", exception.message)
-        assertTrue(exception.cause is IOException)
-    }
+            assertEquals("Failed to read key file", exception.message)
+            assertTrue(exception.cause is IOException)
+        }
 
     abstract fun `Private key should be returned if file exists`()
 }
