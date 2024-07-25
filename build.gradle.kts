@@ -10,7 +10,7 @@ plugins {
     // Apply the java-library plugin for API and implementation separation.
     `java-library`
 
-    id("org.jlleitschuh.gradle.ktlint") version "11.6.1"
+    id("org.jlleitschuh.gradle.ktlint") version "12.1.1"
 
     jacoco
 
@@ -104,9 +104,10 @@ tasks.withType<KotlinCompile>().configureEach {
     kotlinOptions {
         jvmTarget = "1.8"
         allWarningsAsErrors = true
-        freeCompilerArgs = freeCompilerArgs + arrayOf(
-            "-opt-in=kotlin.RequiresOptIn"
-        )
+        freeCompilerArgs = freeCompilerArgs +
+            arrayOf(
+                "-opt-in=kotlin.RequiresOptIn",
+            )
     }
 }
 
@@ -129,7 +130,7 @@ publishing {
             pom {
                 name.set(rootProject.name)
                 description.set(
-                    "JVM implementation of file-based Private and Public Key Stores for Awala"
+                    "JVM implementation of file-based Private and Public Key Stores for Awala",
                 )
                 url.set("https://github.com/relaycorp/awala-keystore-file-jvm")
                 developers {
@@ -146,10 +147,10 @@ publishing {
                 }
                 scm {
                     connection.set(
-                        "scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git"
+                        "scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git",
                     )
                     developerConnection.set(
-                        "scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git"
+                        "scm:git:https://github.com/relaycorp/awala-keystore-file-jvm.git",
                     )
                     url.set("https://github.com/relaycorp/awala-keystore-file-jvm")
                 }
@@ -171,7 +172,7 @@ nexusPublishing {
         sonatype {
             nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
             snapshotRepositoryUrl.set(
-                uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+                uri("https://s01.oss.sonatype.org/content/repositories/snapshots/"),
             )
             username.set(System.getenv("MAVEN_USERNAME"))
             password.set(System.getenv("MAVEN_PASSWORD"))
@@ -183,7 +184,7 @@ tasks.publish {
 }
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    version.set("0.42.1")
+    version.set("1.3.1")
 }
 
 gradleEnterprise {

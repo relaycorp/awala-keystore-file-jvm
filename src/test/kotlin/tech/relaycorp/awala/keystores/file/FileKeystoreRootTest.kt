@@ -33,7 +33,8 @@ class FileKeystoreRootTest {
         if (rootDirectoryPath.exists()) {
             rootDirectoryPath.toFile().setReadable(true)
 
-            Files.walk(rootDirectoryPath)
+            Files
+                .walk(rootDirectoryPath)
                 .sorted(Comparator.reverseOrder())
                 .map(Path::toFile)
                 .forEach(File::delete)
@@ -52,13 +53,14 @@ class FileKeystoreRootTest {
             val file = rootDirectoryFile.resolve("file.txt")
             file.createNewFile()
 
-            val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(file)
-            }
+            val exception =
+                assertThrows<FileKeystoreException> {
+                    FileKeystoreRoot(file)
+                }
 
             assertEquals(
                 "Root '${file.path}' isn't a directory",
-                exception.message
+                exception.message,
             )
         }
 
@@ -88,13 +90,14 @@ class FileKeystoreRootTest {
         fun `Root directory should be refused if it isn't readable`() {
             rootDirectoryPath.toFile().setReadable(false)
 
-            val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(rootDirectoryFile)
-            }
+            val exception =
+                assertThrows<FileKeystoreException> {
+                    FileKeystoreRoot(rootDirectoryFile)
+                }
 
             assertEquals(
                 "Root '${rootDirectoryPath.pathString}' isn't readable",
-                exception.message
+                exception.message,
             )
         }
 
@@ -103,13 +106,14 @@ class FileKeystoreRootTest {
         fun `Root directory should be refused if it isn't writable`() {
             rootDirectoryPath.toFile().setWritable(false)
 
-            val exception = assertThrows<FileKeystoreException> {
-                FileKeystoreRoot(rootDirectoryFile)
-            }
+            val exception =
+                assertThrows<FileKeystoreException> {
+                    FileKeystoreRoot(rootDirectoryFile)
+                }
 
             assertEquals(
                 "Root '${rootDirectoryPath.pathString}' isn't writable",
-                exception.message
+                exception.message,
             )
         }
     }

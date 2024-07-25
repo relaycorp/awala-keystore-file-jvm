@@ -11,7 +11,9 @@ import kotlin.test.assertEquals
  *
  * But it doesn't actually encrypt anything.
  */
-class MockFilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : FilePrivateKeyStore(keystoreRoot) {
+class MockFilePrivateKeyStore(
+    keystoreRoot: FileKeystoreRoot,
+) : FilePrivateKeyStore(keystoreRoot) {
     override fun makeEncryptedOutputStream(file: File): OutputStream {
         val stream = file.outputStream()
         stream.write(header)
@@ -32,7 +34,7 @@ class MockFilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : FilePrivateKeySt
             val fileContents = file.readBytes()
             assertEquals(
                 header.toString(charset),
-                fileContents.slice(header.indices).toByteArray().toString(charset)
+                fileContents.slice(header.indices).toByteArray().toString(charset),
             )
             return fileContents.slice(header.size until fileContents.size).toByteArray()
         }

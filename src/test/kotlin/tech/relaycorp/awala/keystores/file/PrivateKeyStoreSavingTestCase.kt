@@ -19,80 +19,88 @@ import org.junit.jupiter.api.condition.OS
 abstract class PrivateKeyStoreSavingTestCase(
     private val keystoreRoot: FileKeystoreRoot,
     private val keyFilePath: Path,
-    private val saveMethod: suspend FilePrivateKeyStore.() -> Unit
+    private val saveMethod: suspend FilePrivateKeyStore.() -> Unit,
 ) {
     @Test
-    fun `Parent subdirectory should be reused if it exists`() = runTest {
-        keyFilePath.parent.createDirectories()
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `Parent subdirectory should be reused if it exists`() =
+        runTest {
+            keyFilePath.parent.createDirectories()
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        saveMethod(keystore)
+            saveMethod(keystore)
 
-        assertTrue(keyFilePath.exists())
-    }
-
-    @Test
-    fun `Parent directory should be created if it doesn't exist`() = runTest {
-        assertFalse(keyFilePath.parent.exists())
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
-
-        saveMethod(keystore)
-
-        assertTrue(keyFilePath.exists())
-    }
+            assertTrue(keyFilePath.exists())
+        }
 
     @Test
-    fun `Root directory should be created if it doesn't exist`() = runTest {
-        keystoreRoot.directory.delete()
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `Parent directory should be created if it doesn't exist`() =
+        runTest {
+            assertFalse(keyFilePath.parent.exists())
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        saveMethod(keystore)
+            saveMethod(keystore)
 
-        assertTrue(keyFilePath.exists())
-    }
+            assertTrue(keyFilePath.exists())
+        }
+
+    @Test
+    fun `Root directory should be created if it doesn't exist`() =
+        runTest {
+            keystoreRoot.directory.delete()
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
+
+            saveMethod(keystore)
+
+            assertTrue(keyFilePath.exists())
+        }
 
     @Test
     @DisabledOnOs(OS.WINDOWS)
-    fun `Errors creating node subdirectory should be wrapped`() = runTest {
-        keystoreRoot.directory.setExecutable(false)
-        keystoreRoot.directory.setWritable(false)
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `Errors creating node subdirectory should be wrapped`() =
+        runTest {
+            keystoreRoot.directory.setExecutable(false)
+            keystoreRoot.directory.setWritable(false)
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        val exception = assertThrows<FileKeystoreException> {
-            saveMethod(keystore)
+            val exception =
+                assertThrows<FileKeystoreException> {
+                    saveMethod(keystore)
+                }
+
+            assertEquals(
+                "Failed to create root directory for private keys",
+                exception.message,
+            )
         }
-
-        assertEquals(
-            "Failed to create root directory for private keys",
-            exception.message
-        )
-    }
 
     @Test
     @DisabledOnOs(OS.WINDOWS)
-    fun `Errors creating or updating file should be wrapped`() = runTest {
-        keyFilePath.parent.createDirectories()
-        keyFilePath.toFile().createNewFile()
-        keyFilePath.toFile().setWritable(false)
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `Errors creating or updating file should be wrapped`() =
+        runTest {
+            keyFilePath.parent.createDirectories()
+            keyFilePath.toFile().createNewFile()
+            keyFilePath.toFile().setWritable(false)
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        val exception = assertThrows<FileKeystoreException> {
-            saveMethod(keystore)
+            val exception =
+                assertThrows<FileKeystoreException> {
+                    saveMethod(keystore)
+                }
+
+            assertEquals("Failed to save key file", exception.message)
+            assertTrue(exception.cause is IOException)
         }
 
-        assertEquals("Failed to save key file", exception.message)
-        assertTrue(exception.cause is IOException)
-    }
-
     @Test
-    fun `New file should be created if key is new`() = runTest {
-        assertFalse(keyFilePath.exists())
-        val keystore = MockFilePrivateKeyStore(keystoreRoot)
+    fun `New file should be created if key is new`() =
+        runTest {
+            assertFalse(keyFilePath.exists())
+            val keystore = MockFilePrivateKeyStore(keystoreRoot)
 
-        saveMethod(keystore)
+            saveMethod(keystore)
 
-        assertTrue(keyFilePath.exists())
-    }
+            assertTrue(keyFilePath.exists())
+        }
 
     @Test
     abstract fun `Private key should be stored`()

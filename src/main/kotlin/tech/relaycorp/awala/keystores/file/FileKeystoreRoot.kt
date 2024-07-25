@@ -2,22 +2,24 @@ package tech.relaycorp.awala.keystores.file
 
 import java.io.File
 
-public class FileKeystoreRoot @Throws(FileKeystoreException::class) constructor(
-    internal val directory: File
-) {
-    init {
-        if (directory.exists()) {
-            if (!directory.isDirectory) {
-                throw FileKeystoreException("Root '${directory.path}' isn't a directory")
-            }
+public class FileKeystoreRoot
+    @Throws(FileKeystoreException::class)
+    constructor(
+        internal val directory: File,
+    ) {
+        init {
+            if (directory.exists()) {
+                if (!directory.isDirectory) {
+                    throw FileKeystoreException("Root '${directory.path}' isn't a directory")
+                }
 
-            // Check permissions (read and write operations are always allowed on Windows)
-            if (!directory.canRead()) {
-                throw FileKeystoreException("Root '${directory.path}' isn't readable")
-            }
-            if (!directory.canWrite()) {
-                throw FileKeystoreException("Root '${directory.path}' isn't writable")
+                // Check permissions (read and write operations are always allowed on Windows)
+                if (!directory.canRead()) {
+                    throw FileKeystoreException("Root '${directory.path}' isn't readable")
+                }
+                if (!directory.canWrite()) {
+                    throw FileKeystoreException("Root '${directory.path}' isn't writable")
+                }
             }
         }
     }
-}

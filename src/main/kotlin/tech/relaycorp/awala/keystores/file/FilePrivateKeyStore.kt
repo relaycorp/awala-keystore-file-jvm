@@ -7,14 +7,16 @@ import java.io.OutputStream
 import tech.relaycorp.relaynet.keystores.PrivateKeyData
 import tech.relaycorp.relaynet.keystores.PrivateKeyStore
 
-public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : PrivateKeyStore() {
+public abstract class FilePrivateKeyStore(
+    keystoreRoot: FileKeystoreRoot,
+) : PrivateKeyStore() {
     @Suppress("MemberVisibilityCanBePrivate")
     public val rootDirectory: File = keystoreRoot.directory.resolve("private")
 
     @Suppress("BlockingMethodInNonBlockingContext")
     override suspend fun saveIdentityKeyData(
         nodeId: String,
-        keyData: PrivateKeyData
+        keyData: PrivateKeyData,
     ) {
         val keyFile = getNodeSubdirectory(nodeId).resolve("identity")
         saveKeyFile(keyFile, keyData.privateKeyDer)
@@ -51,7 +53,10 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
         return retrieveKeyData(boundKeyPath) ?: retrieveKeyData(unboundKeyPath)
     }
 
-    private fun saveKeyFile(keyFile: File, serialization: ByteArray) {
+    private fun saveKeyFile(
+        keyFile: File,
+        serialization: ByteArray,
+    ) {
         val parentDirectory = keyFile.parentFile
         val wereDirectoriesCreated = parentDirectory.mkdirs()
         if (!wereDirectoriesCreated && !parentDirectory.exists()) {
@@ -82,18 +87,19 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
     private fun resolveSessionKeyFile(
         nodeId: String,
         keyId: String,
-        peerId: String?
+        peerId: String?,
     ): File {
         val nodeSubdirectory = getNodeSubdirectory(nodeId).resolve("session")
-        val parentDirectory = if (peerId != null)
-            nodeSubdirectory.resolve(peerId)
-        else
-            nodeSubdirectory
+        val parentDirectory =
+            if (peerId != null) {
+                nodeSubdirectory.resolve(peerId)
+            } else {
+                nodeSubdirectory
+            }
         return parentDirectory.resolve(keyId)
     }
 
-    private fun getNodeSubdirectory(nodeId: String) =
-        rootDirectory.resolve(nodeId)
+    private fun getNodeSubdirectory(nodeId: String) = rootDirectory.resolve(nodeId)
 
     private fun getNodeDirectories() = rootDirectory.listFiles()?.filter(File::isDirectory)
 
@@ -116,14 +122,18 @@ public abstract class FilePrivateKeyStore(keystoreRoot: FileKeystoreRoot) : Priv
      * Delete all the private keys associated with [peerId].
      */
     @Throws(FileKeystoreException::class)
-    override suspend fun deleteBoundSessionKeys(nodeId: String, peerId: String) {
-        val deletionSucceeded = getNodeSubdirectory(nodeId)
-            .resolve("session")
-            .resolve(peerId)
-            .deleteRecursively()
+    override suspend fun deleteBoundSessionKeys(
+        nodeId: String,
+        peerId: String,
+    ) {
+        val deletionSucceeded =
+            getNodeSubdirectory(nodeId)
+                .resolve("session")
+                .resolve(peerId)
+                .deleteRecursively()
         if (!deletionSucceeded) {
             throw FileKeystoreException(
-                "Failed to delete session keys for node $nodeId and peer $peerId"
+                "Failed to delete session keys for node $nodeId and peer $peerId",
             )
         }
     }
