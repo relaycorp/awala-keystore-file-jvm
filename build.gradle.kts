@@ -183,7 +183,7 @@ tasks.publish {
 }
 
 configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-    version.set("0.42.1")
+    version.set("1.3.1")
 }
 
 gradleEnterprise {
