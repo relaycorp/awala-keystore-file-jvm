@@ -30,7 +30,7 @@ dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom"))
 
     api("tech.relaycorp:awala:[1.68.5,2.0.0)")
-    testImplementation("tech.relaycorp:awala-testing:1.5.33")
+    testImplementation("tech.relaycorp:awala-testing:1.5.34")
 
     implementation("org.mongodb:bson:5.1.3")
 
